@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<!--suppress ALL -->
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>dc.js example - Untappd Data Visualization</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="css/dc.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-xs-12 dc-data-count dc-chart" id="data-count">
+            <h2>Linz - Votes BP 2016
+                <small>
+                    <span class="filter-count"></span> selected out of <span class="total-count"></span> records |
+                    <a id="all" href="#">Reset All</a>
+                </small>
+            </h2>
+        </div>
+    </div>
+    <div class="row" id="control-row">
+        <div class="col-xs-2 pie-chart">
+            <h4>Year
+                <small><a id="year">reset</a></small>
+            </h4>
+            <div class="dc-chart" id="chart-ring-year"></div>
+        </div>
+        <div class="col-xs-2 pie-chart">
+            <h4>Month
+                <small><a id="month" href="#">reset</a></small>
+            </h4>
+            <div class="dc-chart" id="chart-ring-month"></div>
+        </div>
+        <div class="col-xs-2 pie-chart">
+            <h4>Day
+                <small><a id="day">reset</a></small>
+            </h4>
+            <div id="chart-ring-day" class="dc-chart"></div>
+        </div>
+        <div class="col-xs-6">
+            <h4>Breweries</h4>
+            <div id="map"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-6 col-md-3">
+            <div class="dc-chart" id="chart-rating-count"></div>
+        </div>
+        <div class="col-xs-6 col-md-3">
+            <div class="dc-chart" id="chart-community-rating-count"></div>
+        </div>
+        <div class="col-xs-6 col-md-3">
+            <div class="dc-chart" id="chart-abv-count"></div>
+        </div>
+        <div class="col-xs-6 col-md-3">
+            <div class="dc-chart" id="chart-ibu-count"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div id="chart-histogram">
+            <div>histogram</div>
+            <!-- href="javascript:....." ging in chrome nicht -->
+            <!-- https://dc-js.github.io/dc.js/docs/stock.html .TURNONCONTROLS()
+If a link with css class reset is present then the chart will automatically hide/show it based on whether there is a filter set on the chart
+(e.g. slice selection for pie chart and brush selection for bar chart). Enable this with chart.turnOnControls(true)
+dc.js will also automatically inject the current filter value into any html element with its css class set to filter -->
+            <a class="reset" href="#" onclick="histogramChart.filterAll();dc.redrawAll();" style="display: none;">reset</a>
+            <span class="reset" style="display: none;"><span class="filter"></span></span>
+            <br>
+            <br>
+        </div>
+
+        <div id="dataTable" style="height: 300px;">
+            <div class='header'>
+                <span>Id</span>
+                <span>histogram</span>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <table class="table table-bordered table-striped" id="data-table">
+
+            </table>
+        </div>
+    </div>
+</div>
+<script type="text/javascript" src="js/d3.js"></script>
+<script type="text/javascript" src="js/crossfilter.js"></script>
+<script type="text/javascript" src="js/dc.js"></script>
+<script type="text/javascript" src="js/underscore-min.js"></script>
+<script type="text/javascript" src="js/jquery-1.12.3.js"></script>
+<script type="text/javascript">
+
+    /* composite chart bug: brushing not applied
+    bugfix from https://groups.google.com/forum/#!topic/dc-js-user-group/yI6_cbvgfbU
+    edit the dc.js chart.brushing function */
+    (function() {
+        var compositeChart = dc.compositeChart;
+        dc.compositeChart = function(parent, chartGroup) {
+            var _chart = compositeChart(parent, chartGroup);
+
+            _chart._brushing = function () {
+                var extent = _chart.extendBrush();
+                var rangedFilter = null;
+                if(!_chart.brushIsEmpty(extent)) {
+                    rangedFilter = dc.filters.RangedFilter(extent[0], extent[1]);
+                }
+
+                dc.events.trigger(function () {
+                    if (!rangedFilter) {
+                        _chart.filter(null);
+                    } else {
+                        _chart.replaceFilter(rangedFilter);
+                    }
+                    _chart.redrawGroup();
+                }, dc.constants.EVENT_DELAY);
+            };
+
+            return _chart;
+        };
+    })();
+
+
+    // global variables
+    // the data from the csv-file
+    var csv;
+    // the column-names of the csv-file
+    var csvColumnsNames = [];
+    // the datatypes per colum of the csv-file
+    var csvColumnsDatatypes = [];
+    // the crossfilter from our csv-file => used for brusing and linking
+    var ndx;
+
+    // when the document is ready (dom loaded), parse csv-file
+    $().ready(function () {
+        url = 'data/P16TAbs3.csv';
+        $.get(url)
+                .done(function (data) {
+                    console.log("URL fetched");
+                    // correct ';' to ',' (';' is often used in german files as delimiter)
+                    csv = d3.csv.parseRows(data.replace(/\s*;\s*/g, ","));
+                    console.log(csv);
+                    parseCSVData();
+                    createFiltersGroupsCharts();
+                })
+                .fail(function (xhr) {
+                    console.log("URL fetch failed.");
+                });
+    });
+
+    /**
+
+     */
+    function parseCSVData() {
+        var datatypes_per_column = [];
+
+        const regexp_int = /^[\-]{0,1}[0-9]+$/;
+        const regexp_double = /^[\-]{0,1}[0-9]+[\.|,][0-9]+$/;
+        const regexp_boolean = /^(0|1|(true)|false){1}$/;
+
+        /* now we have an array with many arrays in it (all the rows from the csv).
+         first, find the head-row, and the datatypes of the different columns.
+         head row: the head row can be the first row of the document, but sometimes it's the second row, or it doesn't exist.
+         datatype: iterate over the array, pick the datatype, which occurs the most.*/
+        for (var i = 0; i < csv.length; i++) {
+
+            for (var m = 0; m < Math.min(csv[m].length, csv[0].length); m++) {
+                var cell = csv[i][m];
+
+                if (i == 0) {
+                    datatypes_per_column[m] = {"empty_count": 0, "int_count": 0, "double_count": 0, "boolean_count": 0};
+                    csvColumnsNames[m] = cell;
+                    continue;
+                }
+                /*console.log("i:" + i + " m:" + m);
+                 console.log(datatypes_per_column);*/
+
+                if (cell.trim() === "" || cell.trim() === "-") {
+                    datatypes_per_column[m].empty_count++;
+                }
+                if ((regexp_int.exec(cell)) !== null) {
+                    datatypes_per_column[m].int_count++;
+                }
+                if ((regexp_double.exec(cell)) !== null) {
+                    datatypes_per_column[m].double_count++;
+                }
+                if ((regexp_boolean.exec(cell)) !== null) {
+                    datatypes_per_column[m].boolean_count++;
+                }
+            }
+        }
+        console.log(datatypes_per_column);
+
+        // delete the first row of the csv (header)
+        csv = deleteRow(csv, 0);
+        console.log(csvColumnsNames);
+        console.log(csv);
+
+
+        // check results, set the data type of the row
+        var col_datatype_index = 0;
+        const number_of_rows = csv.length;
+
+        for (var i = 0; i < datatypes_per_column.length; i++) {
+            csvColumnsDatatypes[col_datatype_index++] = "string";
+            const number_of_non_empty_cells = number_of_rows - datatypes_per_column[i].empty_count;
+            const datatype_treshold = number_of_non_empty_cells * 0.8;
+            // TODO numbers fiddling
+
+            //console.log(datatypes_per_column[i].int_count);
+            //console.log(number_of_non_empty_cells * 0.8);
+
+
+            if (datatypes_per_column[i].int_count >= datatype_treshold) {
+                if (datatypes_per_column[i].double_count >= number_of_non_empty_cells * 0.1) {
+                    csvColumnsDatatypes[col_datatype_index - 1] = "double";
+                } else {
+                    csvColumnsDatatypes[col_datatype_index - 1] = "int";
+                }
+            } else if (datatypes_per_column[i].double_count >= datatype_treshold) {
+                csvColumnsDatatypes[col_datatype_index - 1] = "double";
+            }
+            if (datatypes_per_column[i].boolean_count >= datatype_treshold) {
+                csvColumnsDatatypes[col_datatype_index - 1] = "boolean";
+            }
+
+            // change data types of the values
+            if (csvColumnsDatatypes[col_datatype_index - 1] != "string") {
+                for (var m = 0; m < csv.length; m++) {
+                    // change to int and double values from string
+                    if (csvColumnsDatatypes[col_datatype_index - 1] === "int" || csvColumnsDatatypes[col_datatype_index - 1] === "double") {
+                        csv[m][i] = +csv[m][i];
+                    } else { // boolean
+                        // TODO Change TODO markieren von veränderten werten/ markieren von else werten (falsche werte, eg 2, 3, asdf)
+                        if (csv[m][i] === "0" || csv[m][i].trim() === "false") {
+                            csv[m][i] = false;
+                        } else if (csv[m][i] === "1" || csv[m][i].trim() === "true") {
+                            csv[m][i] = true;
+                        }
+                    }
+                }
+            }
+        }
+        console.log(csvColumnsDatatypes);
+    }
+
+    /**
+
+     */
+    function createFiltersGroupsCharts() {
+
+        // set crossfilter
+        ndx = crossfilter(csv);
+
+
+        // create dimensions (x-axis values)
+        var districtDim = ndx.dimension(function (d) { return d[0]; }),
+                districtDimTestBrushing = ndx.dimension(function (d) { return d[0]; }),
+                allDim = ndx.dimension(function (d) { return d; });
+
+
+        // create groups (y-axis values)
+        var countHofer = districtDim.group().reduceSum(function (d) { return d[8]; }),
+                countHoferTestBrushing = districtDimTestBrushing.group().reduceSum(function (d) { return d[8]; }),
+                countVdb = districtDim.group().reduceSum(function (d) { return d[12]; });
+
+
+        // specify charts
+        var hoferChart = dc.barChart('#chart-rating-count'),
+                hoferChartTestBrushing = dc.barChart('#map'),
+                vdbChart = dc.barChart('#chart-community-rating-count'),
+                stackChart = dc.lineChart("#chart-abv-count"),
+                compositeChart = dc.compositeChart("#chart-ibu-count");
+
+
+        //hundsdorfer
+        createHistogramPlot (8);
+
+        var obj_color = {green: "#1FC15C", blue: "#1f77b4"};
+
+        hoferChart
+                .width(300)
+                .height(180)
+                .x(d3.scale.linear().domain([0, 17]))
+                .margins({top: 10, right: 20, bottom: 50, left: 50})
+                .dimension(districtDim)
+                .group(countHofer)
+                .stack(countVdb)
+                .elasticY(true)
+                .centerBar(true)
+                .barPadding(5)
+                .ordinalColors([obj_color.blue, obj_color.green]) // ordinalcolors statt colors verwenden, da colors eine function erwartet, oder eine ordinal scale (siehe doku)
+                .xAxisLabel('Votes Hofer & Vdb Stack')
+                .yAxisLabel('District')
+                .brushOn(true);
+        //hoferChart.xAxis().tickValues([0, 1, 2, 3, 4, 5]);
+
+        /* dieses chart zum testen eingebaut (vom brushing)
+        hier funktioniert das brushing nun, da eine neue group aufgrund einer neuen dimension die grundlage für das chart ist
+        (anders als bei den anderen charts, welche die gleiche dimension als grundlage für das grouping haben)
+        => später beim dynamischen erstellen der charts muss für jedes eine eigene dimension+gruppe eingerichtet werden, damit das brushing funktioniert
+        das sollte aber eh so sein, da auslagerung in externe methode etc*/
+        hoferChartTestBrushing
+                .width(300)
+                .height(180)
+                .x(d3.scale.linear().domain([0, 17]))
+                .margins({top: 10, right: 20, bottom: 50, left: 50})
+                .dimension(districtDimTestBrushing)
+                .group(countHoferTestBrushing)
+                .elasticY(true)
+                .centerBar(true)
+                .barPadding(5)
+                .ordinalColors([obj_color.blue]) // bei nur einer farbe braucht man nur colors, siehe vdbChart
+                .xAxisLabel('Votes Hofer')
+                .yAxisLabel('District')
+                .brushOn(true);
+        //hoferChartTestBrushing.xAxis().tickValues([0, 1, 2, 3, 4, 5]);
+
+        vdbChart
+                .width(300)
+                .height(180)
+                .x(d3.scale.linear().domain([0, 17]))
+                .margins({top: 10, right: 20, bottom: 50, left: 50})
+                .dimension(districtDim)
+                .group(countVdb)
+                .elasticY(true)
+                .centerBar(true)
+                .colors(obj_color.green)
+                .barPadding(5)
+                .xAxisLabel('Votes Vdb')
+                .yAxisLabel('District')
+                .brushOn(true);
+        //vdbChart.xAxis().tickValues([0, 1, 2, 3, 4, 5]);
+
+        // stack is eher besser bei dem thema, wenn man alle kandidaten übereinander stacked (% werte)
+        stackChart
+                .width(300)
+                .height(180)
+                .x(d3.scale.linear().domain([0, 17]))
+                .margins({top: 10, right: 20, bottom: 50, left: 50})
+                .dimension(districtDim)
+                .group(countHofer)
+                .stack(countVdb)
+                .ordinalColors([obj_color.blue, obj_color.green])
+                .xAxisLabel('Votes Hofer & Vdb Stack')
+                .yAxisLabel('District');
+
+        // um bezirke vergleichen zu können, wären % werte hier auch besser
+        compositeChart
+                .width(300)
+                .height(180)
+                .x(d3.scale.linear().domain([0, 17]))
+
+                .margins({top: 10, right: 20, bottom: 50, left: 50})
+                //.yAxisLabel("The Y Axis")
+                //.legend(dc.legend().x(80).y(20).itemHeight(13).gap(5))
+                //.renderHorizontalGridLines(true)
+                .dimension(districtDim)
+                .compose([
+                    dc.lineChart(compositeChart)
+                            .dimension(districtDim)
+                            .colors(obj_color.blue)
+                            .group(countHofer, "Top Line")
+                            .dashStyle([2, 2]),
+                    dc.lineChart(compositeChart)
+                            .dimension(districtDim)
+                            .colors(obj_color.green)
+                            .group(countVdb, "Bottom Line")
+                            .dashStyle([5, 5])
+                ])
+                //.brushOn(true)
+                .xAxisLabel('Votes Hofer (blue) Vdb (green)')
+                .yAxisLabel('District')
+                .render();
+        console.log($("#data-table").html());
+
+
+        // fill the table
+        var dataTable = dc.dataTable("#data-table");
+
+        // create an array for the columns, consisting of label, format
+        var columnarray = [];
+        for (var i = 0; i < csv[0].length; i++) {
+            columnarray[i] = "" + i;
+        }
+
+        dataTable
+                .dimension(allDim)
+                .group(function (d) {
+                    return 'dc.js insists on putting a row here so I remove it using JS';
+                })
+                .size(100)
+                .columns(columnarray)
+                .sortBy(dc.pluck('0')) // sort by the values of the first column
+                //.order(d3.descending)
+                .on('renderlet', function (table) {
+                    // each time table is rendered remove nasty extra row dc.js insists on adding
+                    table.select('tr.dc-table-group').remove();
+                    // change the header
+                    var thElements = $('#data-table').children('th');
+                    for (var i = 0; i < thElements.length; i++) {
+                        thElements[i].firstChild.nodeValue = csvColumnsNames[i];
+                    }
+                });
+
+        // create the table header
+        /*var table = d3.select("#data-table");
+
+        // append the header row
+        table.append("tr")
+                .attr("style", "margin-left: 250px")
+                .selectAll("th")
+                .data(csvColumns)
+                .enter()
+                .append("th")
+                .text(function (d) {
+                    return d;
+                });*/
+
+        // showtime!
+        dc.renderAll();
+    }
+
+
+    /**
+     * creates a histogram, from the column [index] of the csv-file
+     * no return value needed, dc.barchart is initialized
+     * @param {number} index
+     */
+    function createHistogramPlot (index) {
+        // beim beer ist es kein histogram, da sind so oder so nur begrenzte werte möglich: 0.1er schritte von 1-5 ca, bzw wird dort gerundet,
+        // aber das ist bei werten von 0-10000 nicht möglich, dieser code ist ein echtes histogram
+        // code from http://jsfiddle.net/PBrockmann/dwoycwrp/
+
+        // Threshold has to be put on dimension not on group
+        // to get last bin filled with thresholded values
+        // Compare with https://jsfiddle.net/PBrockmann/ma3wr55k/
+
+        /* warum kann man hier überall csv[8] nehmen, also bei den daten, bimensionen etc, aber bei den berechnungen von trheshold, min max etc funktioniert es nicht?
+         csv[8} ist ja eigentlich die 9te reihe des csv also [bezirk, bezirkname, wahlberechtigte, wählerX, wählerY, ...]
+         die ganzen funktionen (function(d) {) werden reihe für reihe durchgegangen, dh. csv[8] entspricht hier csv[aktuelle reihe][8]
+         */
+
+        // create dimension & grouping (x- & y-values)
+        var histogramDimension;
+        var histogramGrouping;
+
+        // init chart & table
+        histogramChart = dc.barChart("#chart-histogram");
+        dataTable = dc.dataTable("#dataTable");
+
+        // check datatype of column, react accordingly
+        if (csvColumnsDatatypes[index] === "int" || csvColumnsDatatypes[index] === "double") { // int or double
+            // get the minimum and maximum value from the column
+            // get the bin width (max - min) / 10
+            // add half a bin to the lower and upper end
+            // in the end, we have 11 bins
+            arrayMinValue = arrayMin(csv, index);
+            arrayMaxValue = arrayMax(csv, index)
+            histogramBinWidth = Math.round((arrayMaxValue - arrayMinValue) / 10);
+            histogramRange = [arrayMin(csv, index) - histogramBinWidth/2, arrayMax(csv, index) + histogramBinWidth/2];
+            console.log("low: " + histogramRange[0]);
+            console.log("high: " + histogramRange[1]);
+            console.log("width: " + histogramBinWidth);
+
+            // dimension = x-axis values => ranges
+            histogramDimension = ndx.dimension(function(d) {
+                // Threshold
+                var histogramThresholded = d[index];
+                /*if (histogramThresholded <= histogramRange[0]) histogramThresholded = histogramRange[0];
+                 if (histogramThresholded > histogramRange[1]) histogramThresholded = histogramRange[1] - histogramBinWidth;*/
+                return histogramRange[0] + (Math.floor((histogramThresholded - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+            });
+
+            // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
+            histogramGrouping = histogramDimension.group(); // by default reduceCount
+
+
+            // fill chart
+            histogramChart
+                    .width(380)
+                    .height(200)
+                    .margins({
+                        top: 10,
+                        right: 20,
+                        bottom: 30,
+                        left: 30
+                    })
+                    .centerBar(false)
+                    .elasticY(true)
+                    .dimension(histogramDimension)
+                    .group(histogramGrouping)
+                    .colors("#C11E1C")
+                    .x(d3.scale.linear().domain(histogramRange))
+                    .xUnits(dc.units.fp.precision(histogramBinWidth)) // heißt, dass wir zahlen mit der precision von intervallbreite haben, also alle intervallbreite zahlen eine neue zahl
+                    .round(function(d) { // markierung von bereichen im barchart nur "ruckartig" möglich, also nur pro bar/intervall
+                        return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+                    })
+                    .renderHorizontalGridLines(true)
+                    .xAxisLabel('Votes Hundsdorfer')
+                    .yAxisLabel('#districts in histogram-group');
+
+        } else { // boolean or string => ordinal scale instead of linear scale
+            // dimension = x-axis values => ranges
+            if (csvColumnsDatatypes[index] === "boolean") {
+                histogramDimension = ndx.dimension(function (d) {
+                    console.log( d[index]);
+                    if (d[index] != true && d[index] != false) {
+                        return "?"
+                    }
+                    else {
+                        return d[index]
+                    };
+                });
+            } else {
+                histogramDimension = ndx.dimension(function (d) { console.log( d[index]); return d[index]; });
+            }
+
+            // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
+            histogramGrouping = histogramDimension.group(); // by default reduceCount
+
+            // fill chart
+            histogramChart
+                    .width(380)
+                    .height(200)
+                    .margins({
+                        top: 10,
+                        right: 20,
+                        bottom: 30,
+                        left: 30
+                    })
+                    .centerBar(false)
+                    .elasticY(true)
+                    .dimension(histogramDimension)
+                    .group(histogramGrouping)
+                    .colors("#C11E1C")
+                    .x(d3.scale.ordinal())
+                    .xUnits(dc.units.ordinal)
+                    //.xUnits(dc.units.fp.precision(histogramBinWidth)) // heißt, dass wir zahlen mit der precision von intervallbreite haben, also alle intervallbreite zahlen eine neue zahl
+                    /*.round(function(d) { // markierung von bereichen im barchart nur "ruckartig" möglich, also nur pro bar/intervall
+                        return histogramRange[0] + (Math.floor((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+                    })*/
+                    .renderHorizontalGridLines(true)
+                    .xAxisLabel('Votes Hundsdorfer')
+                    .yAxisLabel('#districts in histogram-group')
+                    .ordering(function(d) { return -d.value; }) // ordnen in absteigender reihenfolge http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
+                    .brushOn(true);
+
+
+        }
+
+
+
+        // axis formatting https://github.com/mbostock/d3/wiki/Formatting
+        // "d" = integer
+        // 6 ticks @ y-axis
+        xAxis_histogramChart = histogramChart.xAxis();
+        xAxis_histogramChart.tickFormat(d3.format("d"));
+        yAxis_histogramChart = histogramChart.yAxis();
+        yAxis_histogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
+
+        // fill table
+        dataTable
+                .dimension(histogramDimension)
+                .group(function (d) {
+                    return 'dc.js insists on putting a row here so I remove it using JS';
+                })
+                .columns(["" + index])
+                .on('renderlet', function (table) {
+                    // each time table is rendered remove nasty extra row dc.js insists on adding
+                    table.select('tr.dc-table-group').remove();
+                })
+                .size(30);
+    }
+
+
+    /**
+     *
+     * @param {array} array
+     * @param {number} row
+     * @returns {array}
+     */
+    function deleteRow(array, row) {
+        array = array.slice(0); // make copy
+        array.splice(row, 1);
+        return array;
+    }
+
+
+    /**
+     *
+     * @param {array} array
+     * @param {number} index
+     * @returns {number}
+     */
+    function arrayMin(array, index) {
+        var min = Infinity;
+        for (var i = 0; i < array.length; i++) {
+            if (array[i][index] < min) {
+                min = array[i][index];
+            }
+        }
+        return min;
+    }
+
+    /**
+     *
+     * @param {array} array
+     * @param {number} index
+     * @returns {number}
+     */
+    function arrayMax(array, index) {
+        var max = -Infinity;
+        for (var i = 0; i < array.length; i++) {
+            if (array[i][index] > max) {
+                max = array[i][index];
+            }
+        }
+        return max;
+    }
+</script>
+</body>
+</html>
