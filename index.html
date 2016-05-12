@@ -148,6 +148,7 @@
             this.booleanCount = 0;
             this.emptyCount = 0;
             this.faultyCount = 0;
+            this.sumError = 0;
         } else { // columnInfo
             this.name = arguments[0].name;
             this.intCount = arguments[0].intCount;
@@ -201,17 +202,19 @@
         // call super-constructor
         ColumnInfo.call(this, columnInfo);
 
-        // sort values
-        columnArray.sort();
+        // sort values, standard is sort alphabetically, we want to sum numerically
+        columnArray.sort( function sortNumber(a,b) { return a - b; } );
 
-        // https://github.com/mbostock/d3/wiki/Arrays => API reference for a<ray-, set-, maps-functions
+        // https://github.com/mbostock/d3/wiki/Arrays => API reference for array-, set-, maps-functions
         this.average = d3.mean(columnArray);
-        this.variance = d3.variance(columnArray);
 
-        this.FirstQuartile  = d3.quantile(columnArray, 0.25);
-        this.SecondQuartile = d3.quantile(columnArray, 0.5);
-        this.ThirdQuartile  = d3.quantile(columnArray, 0.75);
+        this.firstQuartile  = d3.quantile(columnArray, 0.25);
+        this.secondQuartile = d3.quantile(columnArray, 0.5);
+        this.thirdQuartile  = d3.quantile(columnArray, 0.75);
 
+        // iqr = inter quartile range = robust measure of scale
+        // divide by 1.349 to remove bias
+        this.iqr = (this.thirdQuartile - this.firstQuartile) / 1.349;
         this.deviation = d3.deviation(columnArray);
 
         this.min = d3.min(columnArray);
@@ -258,7 +261,7 @@
         var maxStringLength = -Infinity;
         var sumStringLength = 0;
 
-        for (var i = 0; i < columnArray; i++) {
+        for (var i = 0; i < columnArray.length; i++) {
             sumStringLength += columnArray[i].length;
             if (columnArray[i].length < minStringLength) {
                 minStringLength = columnArray[i].length;
@@ -631,6 +634,7 @@
         var dataTable = dc.dataTable("#data-table");
 
         // create an array for the columns, consisting of label, format
+        // documentation: http://dc-js.github.io/dc.js/docs/html/dc.dataTable.html#columns__anchor
         var columnArray = [];
         for (var i = 0; i < columnInfo.length; i++) {
             columnArray[i] = {
