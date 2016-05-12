@@ -1,31 +1,24 @@
-/* main.css: Add and override styles */
+/* main.css: add and override styles */
+/* X out of Y records selected */
 .dc-data-count small {
   font-size: 16px;
 }
 
+/* container */
 .container-fluid {
   padding-left: 40px;
   padding-right: 40px;
 }
 
-.pie-chart {
-  height: 150px;
-}
-
+/* axis text */
 .dc-chart .axis text{
   font-size: 12px;
 }
 
-text {
-  font-size: 16px;
-}
-
-#map {
-  height: 150px;
-}
-
-#control-row {
-  padding-bottom: 20px;
+/* span containing the link and selection of the graphs */
+.resetContainer {
+  position: fixed;
+  max-width: 300px;
 }
 
 a { cursor: pointer }

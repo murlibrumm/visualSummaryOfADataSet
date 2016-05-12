@@ -23,13 +23,6 @@
     </div>
     <div id="histograms">
 
-        <!--<div class="col-xs-2">
-            <div id="chart0-histogram">
-                <a class="reset" href="#" onclick="histogramChart[0].filterAll();dc.redrawAll();" style="display: none;">reset</a>
-                <span class="reset" style="display: none;"><span class="filter"></span></span>
-            </div>
-        </div>-->
-
     </div>
     <div class="row">
         <div class="col-xs-12">
@@ -338,13 +331,13 @@
                 cellInfo[m][i] = new CellInfo(csv[m][i]);
             }
         }
-        console.log(columnInfo);
+        // console.log(columnInfo);
 
         // delete the first row of the csv (header)
         csv = deleteRow(csv, 0);
-        console.log(csv);
+        // console.log(csv);
         cellInfo = deleteRow(cellInfo, 0);
-        console.log(cellInfo);
+        // console.log(cellInfo);
 
         // count int, double, boolean, string, empty for each column
         for (var i = 0; i < columnInfo.length; i++) {
@@ -396,7 +389,7 @@
                 }
             }
         }
-        console.log(columnInfo);
+        // console.log(columnInfo);
 
         // now we can mark cells as faulty, if their datatype and the datatype of their column doesn't match
         for (var m = 0; m < cellInfo.length; m++) {
@@ -434,14 +427,12 @@
         allDim = ndx.dimension(function (d) { return d; });
 
         console.log(columnInfo);
+        console.log(cellInfo);
 
         // create histograms for all columns
          for (var i = 0; i < columnInfo.length; i++) {
              createHistogramPlot(i);
          }
-        //createHistogramPlot(0);
-
-
 
         // create covariance matrix
         // TODO
@@ -489,13 +480,16 @@
 
         // init chart & table
         /* structure to create:
-           <div class="col-xs-2">
+         <div class="col-xs-6 col-md-3">
              <div id="chartX-histogram">
-               <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
-               <span class="reset" style="display: none;"><span class="filter"></span></span>
+                 <span class="resetContainer">
+                     <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
+                     <span class="reset" style="display: none;"> <span class="filter"></span></span>
+                 </span>
              </div>
-           </div>*/
+         </div>*/
 
+        // documentation: https://github.com/mbostock/d3/wiki/Selections
         var chartDivId = "chart" + index + "-histogram";
 
         if (elemsInHistogramRow >= 4) {
@@ -511,21 +505,31 @@
         var chartDiv = columnDiv.append("div")
                 .attr("id", chartDivId)
                 .attr("class", "dc-chart");
-        chartDiv.append("a")
+        var resetContainer = chartDiv.append("span")
+                .attr("class", "resetContainer");
+        var aTag = resetContainer.append("a")
                 .attr("class", "reset")
                 .attr("href", "#")
                 .attr("onclick", "histogramCharts[" + index + "].filterAll();dc.redrawAll();")
-                .attr("style" , "display: none");
-        var resetSpan = chartDiv.append("span")
+                .attr("style" , "display: none")
+                .html("reset");
+
+        var resetSpan = resetContainer.append("span")
                 .attr("class", "reset")
-                .attr("style", "display: none");
+                .attr("style", "display: none")
+                .html(" ");
         resetSpan.append("span")
                 .attr("class", "filter");
+        resetSpan.append("br");
+
 
         histogramCharts[index] = dc.barChart("#" + chartDivId);
 
+        var xScale, xUnits, roundFunction, orderingFunction, xAxisTickFormat;
+
         // check datatype of column, react accordingly
         if (columnInfo[index].datatype === "int" || columnInfo[index].datatype === "double") { // int or double
+
             // get the minimum and maximum value from the column
             // get the bin width (max - min) / 10
             // add half a bin to the lower and upper end
@@ -533,9 +537,9 @@
 
             var histogramBinWidth = Math.round((columnInfo[index].max - columnInfo[index].min) / 10);
             var histogramRange = [columnInfo[index].min - histogramBinWidth/2, columnInfo[index].max + histogramBinWidth/2];
-            console.log("low: " + histogramRange[0]);
-            console.log("high: " + histogramRange[1]);
-            console.log("width: " + histogramBinWidth);
+            /*console.log("low: " + histogramRange[0]);
+             console.log("high: " + histogramRange[1]);
+             console.log("width: " + histogramBinWidth);*/
 
             // dimension = x-axis values => ranges
             histogramDimension = ndx.dimension(function(d) {
@@ -545,41 +549,21 @@
             // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
             histogramGrouping = histogramDimension.group(); // by default reduceCount
 
-            // TODO IF ELSE code duplicate
-            // fill chart
-            histogramCharts[index]
-                    .width(300)
-                    .height(180)
-                    .margins({top: 10, right: 20, bottom: 50, left: 50})
-                    .centerBar(false)
-                    .elasticY(true)
-                    .dimension(histogramDimension)
-                    .group(histogramGrouping)
-                    .colors("#C11E1C")
-                    .x(d3.scale.linear().domain(histogramRange))
-                    .xUnits(dc.units.fp.precision(histogramBinWidth)) // x-axis precision = binWidth
-                    .round(function(d) { // with this command, only whole columns can be selected
-                        return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
-                    })
-                    .renderHorizontalGridLines(true)
-                    .xAxisLabel(columnInfo[index].name)
-                    .yAxisLabel('numberns')
-                    .brushOn(true);
 
-
-            // axis formatting https://github.com/mbostock/d3/wiki/Formatting
-            // "d" = integer
-            // 6 ticks @ y-axis
-            var xAxis_histogramChart = histogramCharts[index].xAxis();
-            xAxis_histogramChart.ticks(6).tickFormat(d3.format("d"));
-            var yAxis_histogramChart = histogramCharts[index].yAxis();
-            yAxis_histogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
+            // setup some variables for the histogram
+            var xScale = d3.scale.linear().domain(histogramRange);
+            var xUnits = dc.units.fp.precision(histogramBinWidth);
+            var roundFunction = function(d) { // with this command, only whole columns can be selected
+                return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+            };
+            var orderingFunction = null;
+            var xAxisTickFormat = d3.format("d");
 
         } else { // boolean or string => ordinal scale instead of linear scale
+
             // dimension = x-axis values => ranges
             if (columnInfo[index].datatype === "boolean") {
                 histogramDimension = ndx.dimension(function (d) {
-                    console.log( d[index]);
                     if (d[index].cellValue != true && d[index].cellValue != false) {
                         return "?"
                     }
@@ -588,40 +572,52 @@
                     };
                 });
             } else {
-                histogramDimension = ndx.dimension(function (d) { /*console.log( d[index].cellValue);*/ return d[index].cellValue; });
+                histogramDimension = ndx.dimension(function (d) { return d[index].cellValue; });
             }
 
             // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
             histogramGrouping = histogramDimension.group(); // by default reduceCount
 
-            // fill chart
-            histogramCharts[index]
-                    .width(300)
-                    .height(180)
-                    .margins({top: 10, right: 20, bottom: 50, left: 50})
-                    .centerBar(false)
-                    .elasticY(true)
-                    .dimension(histogramDimension)
-                    .group(histogramGrouping)
-                    .colors("#C11E1C")
-                    .x(d3.scale.ordinal()) // ordinal scala
-                    .xUnits(dc.units.ordinal)
-                    .renderHorizontalGridLines(true)
-                    .xAxisLabel(columnInfo[index].name)
-                    .yAxisLabel('numoins')
-                    .ordering(function(d) { return -d.value; }) // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
-                    .brushOn(true);
-
-
-            // axis formatting https://github.com/mbostock/d3/wiki/Formatting
-            // "d" = integer
-            // 6 ticks @ y-axis
-            var xAxis_histogramChart = histogramCharts[index].xAxis();
-            xAxis_histogramChart.tickFormat(function(v) { return ""; }); // we don't want axis-text, because the text is overlapping, and thus looks very bad
-            var yAxis_histogramChart = histogramCharts[index].yAxis();
-            yAxis_histogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
-
+            // setup some variables for the histogram
+            var xScale = d3.scale.ordinal();
+            var xUnits = dc.units.ordinal;
+            var roundFunction = null;
+            var orderingFunction = function(d) { return -d.value; } // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
+            var xAxisTickFormat = "";
         }
+
+        // fill chart
+        histogramCharts[index]
+                .width(300)
+                .height(180)
+                .margins({top: 25, right: 20, bottom: 35, left: 25})
+                .centerBar(false)
+                .elasticY(true)
+                .dimension(histogramDimension)
+                .group(histogramGrouping)
+                .colors("#C11E1C")
+                .x(xScale)
+                .xUnits(xUnits) // x-axis precision = binWidth
+                .renderHorizontalGridLines(true)
+                .xAxisLabel(columnInfo[index].name)
+                .yAxisLabel('count')
+                .brushOn(true);
+
+        if (roundFunction !== null) {
+            histogramCharts[index].round(roundFunction)
+        }
+        if (orderingFunction !== null) {
+            histogramCharts[index].ordering(orderingFunction)
+        }
+
+
+        // axis formatting https://github.com/mbostock/d3/wiki/Formatting
+        // "d" = integer
+        // 6 ticks @ y-axis
+        var xAxis_histogramChart = histogramCharts[index].xAxis();
+        xAxis_histogramChart.ticks(6).tickFormat(xAxisTickFormat);
+        var yAxis_histogramChart = histogramCharts[index].yAxis();
+        yAxis_histogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
     }
 
 
@@ -642,7 +638,7 @@
                 format: (function(i){ return function(d) {return d[i].cellValue;}; })(i)
             };
         }
-        console.log(columnArray);
+        //console.log(columnArray);
 
         // fill the table
         dataTable
