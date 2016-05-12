@@ -25,8 +25,8 @@
 
         <!--<div class="col-xs-2">
             <div id="chart0-histogram">
-                <a class="reset" href="#" onclick="histogramChart[0].filterAll();dc.redrawAll();" style="visibility: hidden;">reset</a>
-                <span class="reset" style="visibility: hidden;"><span class="filter"></span></span>
+                <a class="reset" href="#" onclick="histogramChart[0].filterAll();dc.redrawAll();" style="display: none;">reset</a>
+                <span class="reset" style="display: none;"><span class="filter"></span></span>
             </div>
         </div>-->
 
@@ -77,22 +77,223 @@
     })();
 
 
-    // global variables
+
+// ======================================= GLOBAL VARIABLE DECLARATIONS =======================================
     // the data from the csv-file
     var csv;
-    // the column-names of the csv-file
-    var csvColumnsNames = [];
-    // the datatypes per colum of the csv-file
-    var csvColumnsDatatypes = [];
+    // 3D-array with the data from the csv, inside each cell is a CellInfo-Object, extended with info about Datatypes
+    var cellInfo = [];
+    // 2D-array with info about each column, inside each cell is a ColumnInfo-Object
+    var columnInfo = [];
     // the crossfilter from our csv-file => used for brusing and linking
     var ndx;
     // dimension for the table, with the whole csv as dimension
     var allDim;
     // all histogramcharts
     var histogramCharts = [];
-    // url
+    // url to the csv-file
     var url = 'data/P16TAbs3.csv';
+    // in each row, there is space for 4 histograms, used for storing how many histograms are in the last row currently
+    var elemsInHistogramRow = Infinity;
 
+    // regular expressions, used for checking the datatype of each cell
+    const regexp_int = /^[\-]{0,1}[0-9]+$/;
+    const regexp_double = /^[\-]{0,1}[0-9]+[\.|,][0-9]+$/;
+    const regexp_boolean = /^(0|1|(true)|false){1}$/;
+
+
+
+// ======================================= CLASS DECLARATIONS =======================================
+    // tutorial on object-oriented-JS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
+    /**
+     * class CellInfo
+     * the constructor checks the type of [cellValue] via regexp, and sets boolean values (isInt, isDouble, etc.)
+     * @param {string} cellValue
+     */
+    function CellInfo (cellValue) {
+        this.cellValue = cellValue;
+        this.isEmpty = false;
+        this.isFaulty = false;
+        this.isInt = false;
+        this.isDouble = false;
+        this.isBoolean = false;
+
+        if (cellValue.trim() === "" || cellValue.trim() === "-") {
+            this.isEmpty = true;
+        }
+        if ((regexp_int.exec(cellValue)) !== null) {
+            this.isInt = true
+        }
+        if ((regexp_double.exec(cellValue)) !== null) {
+            this.isDouble = true;
+        }
+        if ((regexp_boolean.exec(cellValue)) !== null) {
+            this.isBoolean = true;
+        }
+    }
+
+
+    /**
+     * class ColumnInfo
+     * multiple constructors for one class: http://stackoverflow.com/questions/7481988/multiple-constructor-in-javascript
+     * this constructor can either be called with
+     * 1) @param {string} name, then all the counters are initialized with 0
+     * 2) @param {ColumnInfo} columnInfo, then columnInfo is initialized with the exact values from columnInfo
+     */
+    function ColumnInfo ( /* name | columnInfo */) {
+        if (typeof arguments[0] === "string") { // name
+            this.name = arguments[0];
+            this.intCount = 0;
+            this.doubleCount = 0;
+            this.booleanCount = 0;
+            this.emptyCount = 0;
+            this.faultyCount = 0;
+        } else { // columnInfo
+            this.name = arguments[0].name;
+            this.intCount = arguments[0].intCount;
+            this.doubleCount = arguments[0].doubleCount;
+            this.booleanCount = arguments[0].booleanCount;
+            this.emptyCount = arguments[0].emptyCount;
+            this.faultyCount = arguments[0].faultyCount;
+            this.datatype = arguments[0].datatype;
+            this.sumError = arguments[0].sumError;
+        }
+    }
+
+    /**
+     * counts the int, double, boolean, empty values in the array (the array must contain CellInfo-objects)
+     * @param {array} array
+     */
+    ColumnInfo.prototype.countDataTypes = function (array) {
+        for (var i = 0; i < array.length; i++) {
+            if (array[i].isInt)     this.intCount++;
+            if (array[i].isDouble)  this.doubleCount++;
+            if (array[i].isBoolean) this.booleanCount++;
+            if (array[i].isEmpty)   this.emptyCount++;
+        }
+    }
+
+    /**
+     * setter for datatype
+     * @param {string} datatype
+     */
+    ColumnInfo.prototype.setDatatype = function (datatype) {
+        this.datatype = datatype;
+    }
+
+    /**
+     * setter for sumError
+     * @param {number} sumError
+     */
+    ColumnInfo.prototype.setSumError = function (sumError) {
+        this.sumError = sumError;
+    }
+
+
+    /**
+     * class IntColumn extends ColumnInfo
+     * constructor, calculates the statistics for the [columnArray]
+     * [columnInfo] is redirected to the super-constructor
+     * @param {ColumnInfo} columnInfo
+     * @param {array} columnArray
+     */
+    function IntColumn (columnInfo, columnArray) {
+        // call super-constructor
+        ColumnInfo.call(this, columnInfo);
+
+        // sort values
+        columnArray.sort();
+
+        // https://github.com/mbostock/d3/wiki/Arrays => API reference for a<ray-, set-, maps-functions
+        this.average = d3.mean(columnArray);
+        this.variance = d3.variance(columnArray);
+
+        this.FirstQuartile  = d3.quantile(columnArray, 0.25);
+        this.SecondQuartile = d3.quantile(columnArray, 0.5);
+        this.ThirdQuartile  = d3.quantile(columnArray, 0.75);
+
+        this.deviation = d3.deviation(columnArray);
+
+        this.min = d3.min(columnArray);
+        this.max = d3.max(columnArray);
+
+        this.uniqueValuesCount = d3.set(columnArray).values().length;
+
+        // TODO this.sumOutliers = sumOutliers;
+        // mean +- 2s or median +- 1.5iqr
+    }
+
+    IntColumn.prototype = Object.create(ColumnInfo.prototype);
+    IntColumn.prototype.constructor = IntColumn;
+
+
+    /**
+     * class DoubleColumn extends ColumnInfo
+     * constructor
+     * [columnInfo] is redirected to the super-constructor (IntColumn), which has the same statistics as DoubleColumn
+     * @param {ColumnInfo} columnInfo
+     * @param {array} columnArray
+     */
+    function DoubleColumn (columnInfo, columnArray) {
+        // call super-constructor
+        IntColumn.call(this);
+    }
+
+    DoubleColumn.prototype = Object.create(IntColumn.prototype);
+    DoubleColumn.prototype.constructor = DoubleColumn;
+
+
+    /**
+     * class StringColumn extends ColumnInfo
+     * constructor, calculates the statistics for the [columnArray]
+     * [columnInfo] is redirected to the super-constructor
+     * @param {ColumnInfo} columnInfo
+     * @param {array} columnArray
+     */
+    function StringColumn (columnInfo, columnArray) {
+        // call super-constructor
+        ColumnInfo.call(this, columnInfo);
+
+        var minStringLength = Infinity;
+        var maxStringLength = -Infinity;
+        var sumStringLength = 0;
+
+        for (var i = 0; i < columnArray; i++) {
+            sumStringLength += columnArray[i].length;
+            if (columnArray[i].length < minStringLength) {
+                minStringLength = columnArray[i].length;
+            }
+            if (maxStringLength < columnArray[i].length) {
+                maxStringLength = columnArray[i].length;
+            }
+        }
+
+        this.minLength = minStringLength;
+        this.maxLength = maxStringLength;
+        this.averageLength = sumStringLength /= (columnArray.length - this.emptyCount);
+        this.uniqueValuesCount = d3.set(columnArray).values().length;
+    }
+
+    StringColumn.prototype = Object.create(ColumnInfo.prototype);
+    StringColumn.prototype.constructor = StringColumn;
+
+
+    /**
+     * class BooleanColumn extends ColumnInfo
+     * constructor, BooleanColumn does not have any stats to calculate
+     * @param {ColumnInfo} columnInfo
+     * @param {array} columnArray
+     */
+    function BooleanColumn (columnInfo, columnArray) {
+        // call super-constructor
+        ColumnInfo.call(this, columnInfo);
+    }
+
+    BooleanColumn.prototype = Object.create(ColumnInfo.prototype);
+    BooleanColumn.prototype.constructor = BooleanColumn;
+
+
+// ======================================= DOCUMENT READY FUNCTIONS =======================================
     // TODO File selector / Dragndrop
     // when the document is ready (dom loaded), start with the parsing and chart-generating
     $().ready(function () {
@@ -111,122 +312,133 @@
     });
 
 
+
+// ======================================= LOCAL FUNCTIONS =======================================
     /**
      * parse the csv-file, extract the column names, try to get the column-datatypes
      * (first row is expected to be the header row)
      */
     function parseCSVData() {
-        var datatypes_per_column = [];
-
-        const regexp_int = /^[\-]{0,1}[0-9]+$/;
-        const regexp_double = /^[\-]{0,1}[0-9]+[\.|,][0-9]+$/;
-        const regexp_boolean = /^(0|1|(true)|false){1}$/;
-
         /* now we have an array with many arrays in it (all the rows from the csv).
          first, find the head-row, and the datatypes of the different columns.
          head row: the head row can be the first row of the document, but sometimes it's the second row, or it doesn't exist.
          datatype: iterate over the array, pick the datatype, which occurs the most.*/
-        for (var i = 0; i < csv.length; i++) {
+        for (var m = 0; m < csv.length; m++) {
+            cellInfo[m] = [];
 
-            for (var m = 0; m < Math.min(csv[m].length, csv[0].length); m++) {
-                var cell = csv[i][m];
-
-                if (i == 0) {
-                    datatypes_per_column[m] = {"empty_count": 0, "int_count": 0, "double_count": 0, "boolean_count": 0};
-                    csvColumnsNames[m] = cell;
+            for (var i = 0; i < Math.min(csv[0].length, csv[m].length); i++) {
+                if (m == 0) {
+                    columnInfo[i] = new ColumnInfo(csv[m][i]);
                     continue; // because we don't want to count the header-row
                 }
 
-                if (cell.trim() === "" || cell.trim() === "-") {
-                    datatypes_per_column[m].empty_count++;
-                }
-                if ((regexp_int.exec(cell)) !== null) {
-                    datatypes_per_column[m].int_count++;
-                }
-                if ((regexp_double.exec(cell)) !== null) {
-                    datatypes_per_column[m].double_count++;
-                }
-                if ((regexp_boolean.exec(cell)) !== null) {
-                    datatypes_per_column[m].boolean_count++;
-                }
+                cellInfo[m][i] = new CellInfo(csv[m][i]);
             }
         }
-        console.log(datatypes_per_column);
+        console.log(columnInfo);
 
         // delete the first row of the csv (header)
         csv = deleteRow(csv, 0);
-        console.log(csvColumnsNames);
         console.log(csv);
+        cellInfo = deleteRow(cellInfo, 0);
+        console.log(cellInfo);
 
+        // count int, double, boolean, string, empty for each column
+        for (var i = 0; i < columnInfo.length; i++) {
+            columnInfo[i].countDataTypes(getColumnFromArray (cellInfo, i));
+        }
 
-        // check results, set the data type of the row
-        var col_datatype_index = 0;
-        const number_of_rows = csv.length;
+        // check results, set the data type of the column
+        const numberOfRows = cellInfo.length;
+        const numberOfColumns = columnInfo.length;
 
-        for (var i = 0; i < datatypes_per_column.length; i++) {
-            csvColumnsDatatypes[col_datatype_index++] = "string";
-            const number_of_non_empty_cells = number_of_rows - datatypes_per_column[i].empty_count;
-            const datatype_treshold = number_of_non_empty_cells * 0.8;
+        for (var i = 0; i < columnInfo.length; i++) {
+            var columnDatatype = "string";
+            const numberOfNonEmptyCells = numberOfRows - columnInfo[i].emptyCount;
+            const datatypeTreshold = numberOfNonEmptyCells * 0.8;
             // TODO numbers fiddling
 
-            if (datatypes_per_column[i].int_count >= datatype_treshold) {
-                if (datatypes_per_column[i].double_count >= number_of_non_empty_cells * 0.1) {
-                    csvColumnsDatatypes[col_datatype_index - 1] = "double";
+            if (columnInfo[i].intCount >= datatypeTreshold) {
+                if (columnInfo[i].doubleCount >= numberOfNonEmptyCells * 0.1) {
+                    columnDatatype = "double";
                 } else {
-                    csvColumnsDatatypes[col_datatype_index - 1] = "int";
+                    columnDatatype = "int";
                 }
-            } else if (datatypes_per_column[i].double_count >= datatype_treshold) {
-                csvColumnsDatatypes[col_datatype_index - 1] = "double";
+            } else if (columnInfo[i].doubleCount >= datatypeTreshold) {
+                columnDatatype = "double";
             }
-            if (datatypes_per_column[i].boolean_count >= datatype_treshold) {
-                csvColumnsDatatypes[col_datatype_index - 1] = "boolean";
+            if (columnInfo[i].booleanCount >= datatypeTreshold) {
+                columnDatatype = "boolean";
             }
 
+            columnInfo[i].setDatatype(columnDatatype);
+
             // change data types of the values
-            if (csvColumnsDatatypes[col_datatype_index - 1] != "string") {
-                for (var m = 0; m < csv.length; m++) {
+            if (columnInfo[i].datatype != "string") {
+
+                for (var m = 0; m < cellInfo.length; m++) {
+
                     // change to int and double values from string
-                    if (csvColumnsDatatypes[col_datatype_index - 1] === "int" || csvColumnsDatatypes[col_datatype_index - 1] === "double") {
-                        csv[m][i] = +csv[m][i];
+                    if (columnInfo[i].datatype === "int" ||
+                            columnInfo[i].datatype === "double") {
+                        cellInfo[m][i].cellValue = +cellInfo[m][i].cellValue;
                     } else { // boolean
-                        // TODO Change TODO markieren von veränderten werten/ markieren von else werten (falsche werte, eg 2, 3, asdf)
-                        if (csv[m][i] === "0" || csv[m][i].trim() === "false") {
-                            csv[m][i] = false;
-                        } else if (csv[m][i] === "1" || csv[m][i].trim() === "true") {
-                            csv[m][i] = true;
+                        // TODO maybe state, that the value was changed (0 => false), and visualize it in the table?
+                        if (cellInfo[m][i].cellValue === "0" || cellInfo[m][i].cellValue.trim() === "false") {
+                            cellInfo[m][i].cellValue = false;
+                        } else if (cellInfo[m][i].cellValue === "1" || cellInfo[m][i].cellValue.trim() === "true") {
+                            cellInfo[m][i].cellValue = true;
                         }
                     }
                 }
             }
         }
-        console.log(csvColumnsDatatypes);
+        console.log(columnInfo);
+
+        // now we can mark cells as faulty, if their datatype and the datatype of their column doesn't match
+        for (var m = 0; m < cellInfo.length; m++) {
+
+            for (var i = 0; i < cellInfo[m].length; i++) {
+                if   ( (columnInfo[i].datatype === "int"     && !cellInfo[m][i].isInt)
+                    || (columnInfo[i].datatype === "double"  && !cellInfo[m][i].isDouble)
+                    || (columnInfo[i].datatype === "boolean" && !cellInfo[m][i].isBoolean) ){
+                    cellInfo[m][i].isFaulty = true;
+                    columnInfo[i].faultyCount++;
+                }
+            }
+        }
 
         // prepend is used for inserting content at the beginning of an element
         // substring from after the last slash until the end
-        // TODO show number of columns and rows
-        $(".dc-data-count").children("h2").prepend(url.substring(url.lastIndexOf("/") + 1));
+        $(".dc-data-count").children("h2").prepend(url.substring(url.lastIndexOf("/") + 1) + "; Rows: " + numberOfRows + ", Columns: " + numberOfColumns);
     }
 
 
     /**
-     * creates charts (histograms for all columns) and other important charts TODO
+     * creates charts (histograms for all columns), calculates statistics for each column,
+     * creates a table with the data and renders everything
      */
     function generateCharts() {
+
+        // collect important data for all columns
+        // number of rows and columns, format of each column (string, double, etc.), deviation of values of numerical columns, length of strings, etc.
+        for (var i = 0; i < columnInfo.length; i++) {
+            calculateColumnStats(i);
+        }
+
         // set crossfilter, set allDim (used for the table)
-        ndx = crossfilter(csv);
+        ndx = crossfilter(cellInfo);
         allDim = ndx.dimension(function (d) { return d; });
 
+        console.log(columnInfo);
+
         // create histograms for all columns
-         for (var i = 0; i < csvColumnsNames.length; i++) {
+         for (var i = 0; i < columnInfo.length; i++) {
              createHistogramPlot(i);
          }
         //createHistogramPlot(0);
 
-        // collect important data for all columns
-        // number of rows and columns, format of each column (string, double, etc.), deviation of values of numerical columns, length of strings, etc.
-        for (var i = 0; i < csvColumnsNames.length; i++) {
-            calculateColumnStats(i);
-        }
+
 
         // create covariance matrix
         // TODO
@@ -243,31 +455,25 @@
 
 
     /**
-     *
+     * calculates stats for each column, the stats depend on the datatype of the column
+     * @param {number} index
      */
     function calculateColumnStats (index) {
-        if (csvColumnsDatatypes[index] === "int" || csvColumnsDatatypes[index] === "double") { // int or double
-            /* interesting values for int or double columns:
-             1. average / robust average (median zb)
-             2. scattering / robust scattering (IQR zb)
-             3. % ausreißer / % leer
-             4. min/max value
-             5. #unique values
-             6. quantile
-             7. boxplot optional*/
 
-        } else {
-            /* interesting values for boolean or string columns:
-             1. avg-string länge
-             2. min/max string länge
-             3. % leer
-             4. #unique values
-             5.
-             */
+        var columnArray = getColumnPropertyFromObjectInArray(cellInfo, index, "cellValue");
+
+        if (columnInfo[index].datatype === "int") {
+            columnInfo[index] = new IntColumn(columnInfo[index], columnArray);
+        } else if (columnInfo[index].datatype === "double") {
+            columnInfo[index] = new DoubleColumn(columnInfo[index], columnArray);
+        } else if (columnInfo[index].datatype === "boolean") {
+            columnInfo[index] = new BooleanColumn(columnInfo[index], columnArray);
+        } else if (columnInfo[index].datatype === "string") {
+            columnInfo[index] = new StringColumn(columnInfo[index], columnArray);
         }
     }
 
-    var elemsInHistogramRow = Infinity;
+
     /**
      * creates a histogram, from the column [index] of the csv-file
      * no return value needed, dc.barchart is initialized
@@ -279,26 +485,26 @@
         var histogramGrouping;
 
         // init chart & table
-        // structure to create:
-        // <div class="col-xs-2">
-        //  <div id="chartX-histogram">
-        //   <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
-        //   <span class="reset" style="display: none;"><span class="filter"></span></span>
+        /* structure to create:
+           <div class="col-xs-2">
+             <div id="chartX-histogram">
+               <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
+               <span class="reset" style="display: none;"><span class="filter"></span></span>
+             </div>
+           </div>*/
 
         var chartDivId = "chart" + index + "-histogram";
-        // TODO dynamische zuweisung funktioniert nicht, produziert fehler
-        // => http://stackoverflow.com/questions/32973616/uncaught-typeerror-cannot-read-property-textcontent-of-null-error
-        console.log(elemsInHistogramRow);
+
         if (elemsInHistogramRow >= 4) {
             var rowDiv = d3.select("#histograms").append("div")
                     .attr("class", "row");
             elemsInHistogramRow = 0;
-            console.log("DRIN");
-
         }
+
         var columnDiv = d3.select("#histograms>div:last-child").append("div")
                 .attr("class", "col-xs-6 col-md-3");
         elemsInHistogramRow++;
+
         var chartDiv = columnDiv.append("div")
                 .attr("id", chartDivId)
                 .attr("class", "dc-chart");
@@ -306,35 +512,31 @@
                 .attr("class", "reset")
                 .attr("href", "#")
                 .attr("onclick", "histogramCharts[" + index + "].filterAll();dc.redrawAll();")
-                .attr("style" , "display:none");
+                .attr("style" , "display: none");
         var resetSpan = chartDiv.append("span")
                 .attr("class", "reset")
-                .attr("style", "display:none");
+                .attr("style", "display: none");
         resetSpan.append("span")
                 .attr("class", "filter");
 
         histogramCharts[index] = dc.barChart("#" + chartDivId);
 
         // check datatype of column, react accordingly
-        if (csvColumnsDatatypes[index] === "int" || csvColumnsDatatypes[index] === "double") { // int or double
+        if (columnInfo[index].datatype === "int" || columnInfo[index].datatype === "double") { // int or double
             // get the minimum and maximum value from the column
             // get the bin width (max - min) / 10
             // add half a bin to the lower and upper end
             // in the end, we have 11 bins
-            var arrayMinValue = arrayMin(csv, index);
-            var arrayMaxValue = arrayMax(csv, index)
-            var histogramBinWidth = Math.round((arrayMaxValue - arrayMinValue) / 10);
-            var histogramRange = [arrayMin(csv, index) - histogramBinWidth/2, arrayMax(csv, index) + histogramBinWidth/2];
+
+            var histogramBinWidth = Math.round((columnInfo[index].max - columnInfo[index].min) / 10);
+            var histogramRange = [columnInfo[index].min - histogramBinWidth/2, columnInfo[index].max + histogramBinWidth/2];
             console.log("low: " + histogramRange[0]);
             console.log("high: " + histogramRange[1]);
             console.log("width: " + histogramBinWidth);
 
             // dimension = x-axis values => ranges
             histogramDimension = ndx.dimension(function(d) {
-                var histogramValue = d[index];
-                /*if (histogramThresholded <= histogramRange[0]) histogramThresholded = histogramRange[0];
-                 if (histogramThresholded > histogramRange[1]) histogramThresholded = histogramRange[1] - histogramBinWidth;*/
-                return histogramRange[0] + (Math.floor((histogramValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+                return histogramRange[0] + (Math.floor((d[index].cellValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
             });
 
             // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
@@ -357,7 +559,7 @@
                         return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
                     })
                     .renderHorizontalGridLines(true)
-                    .xAxisLabel(csvColumnsNames[index])
+                    .xAxisLabel(columnInfo[index].name)
                     .yAxisLabel('numberns')
                     .brushOn(true);
 
@@ -372,18 +574,18 @@
 
         } else { // boolean or string => ordinal scale instead of linear scale
             // dimension = x-axis values => ranges
-            if (csvColumnsDatatypes[index] === "boolean") {
+            if (columnInfo[index].datatype === "boolean") {
                 histogramDimension = ndx.dimension(function (d) {
                     console.log( d[index]);
-                    if (d[index] != true && d[index] != false) {
+                    if (d[index].cellValue != true && d[index].cellValue != false) {
                         return "?"
                     }
                     else {
-                        return d[index]
+                        return d[index].cellValue
                     };
                 });
             } else {
-                histogramDimension = ndx.dimension(function (d) { console.log( d[index]); return d[index]; });
+                histogramDimension = ndx.dimension(function (d) { /*console.log( d[index].cellValue);*/ return d[index].cellValue; });
             }
 
             // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
@@ -402,7 +604,7 @@
                     .x(d3.scale.ordinal()) // ordinal scala
                     .xUnits(dc.units.ordinal)
                     .renderHorizontalGridLines(true)
-                    .xAxisLabel(csvColumnsNames[index])
+                    .xAxisLabel(columnInfo[index].name)
                     .yAxisLabel('numoins')
                     .ordering(function(d) { return -d.value; }) // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
                     .brushOn(true);
@@ -429,10 +631,14 @@
         var dataTable = dc.dataTable("#data-table");
 
         // create an array for the columns, consisting of label, format
-        var columnarray = [];
-        for (var i = 0; i < csv[0].length; i++) {
-            columnarray[i] = "" + i;
+        var columnArray = [];
+        for (var i = 0; i < columnInfo.length; i++) {
+            columnArray[i] = {
+                label: columnInfo[i].name,
+                format: (function(i){ return function(d) {return d[i].cellValue;}; })(i)
+            };
         }
+        console.log(columnArray);
 
         // fill the table
         dataTable
@@ -441,17 +647,17 @@
                     return 'dc.js insists on putting a row here so I remove it using JS';
                 })
                 .size(100)
-                .columns(columnarray)
-                .sortBy(dc.pluck('0')) // sort by the values of the first column
+                .columns(columnArray)
+                .sortBy(function(d) {return d[0].cellValue;}) // sort by the values of the first column
                 //.order(d3.descending)
                 .on('renderlet', function (table) {
                     // each time table is rendered remove nasty extra row dc.js insists on adding
                     table.select('tr.dc-table-group').remove();
-                    // change the header
+                    /* change the header
                     var thElements = $('#data-table').children('th');
                     for (var i = 0; i < thElements.length; i++) {
-                        thElements[i].firstChild.nodeValue = csvColumnsNames[i];
-                    }
+                        thElements[i].firstChild.nodeValue = columnInfo[i].name;
+                    }*/
                 });
 
 
@@ -475,36 +681,31 @@
 
 
     /**
-     * find the minimum value from the column [index] of the [array]
+     * selects a column [index] from an array [array], and returns it
      * @param {array} array
      * @param {number} index
-     * @returns {number}
+     * @returns {array}
      */
-    function arrayMin(array, index) {
-        var min = Infinity;
+    function getColumnFromArray (array, index) {
+        var column= [];
         for (var i = 0; i < array.length; i++) {
-            if (array[i][index] < min) {
-                min = array[i][index];
-            }
+            column[i] = array[i][index];
         }
-        return min;
+        return column;
     }
 
-
     /**
-     * find the maximum value from the column [index] of the [array]
+     * selects a column [index] from an array [array], and returns it
      * @param {array} array
      * @param {number} index
-     * @returns {number}
+     * @returns {array}
      */
-    function arrayMax(array, index) {
-        var max = -Infinity;
+    function getColumnPropertyFromObjectInArray (array, index, property) {
+        var column= [];
         for (var i = 0; i < array.length; i++) {
-            if (array[i][index] > max) {
-                max = array[i][index];
-            }
+            column[i] = array[i][index][property];
         }
-        return max;
+        return column;
     }
 </script>
 </body>
