@@ -25,7 +25,7 @@
 
     </div>
     <div class="row">
-        <div class="col-xs-12">
+        <div class="col-xs-12" id="dataTableWrapper">
             <table class="table table-bordered table-striped" id="data-table">
 
             </table>
@@ -37,6 +37,7 @@
 <script type="text/javascript" src="js/dc.js"></script>
 <script type="text/javascript" src="js/underscore-min.js"></script>
 <script type="text/javascript" src="js/jquery-1.12.3.js"></script>
+<script type="text/javascript" src="js/jquery.doubleScroll.js"></script>
 <script type="text/javascript">
 
     // TODO only use if composite chart is used
@@ -138,6 +139,14 @@
         }
     }
 
+    /**
+     * setter for isOutlier
+     * @param {boolean} isOutlier
+     */
+    CellInfo.prototype.setIsOutlier = function (isOutlier) {
+        this.isOutlier = isOutlier;
+    }
+
 
     /**
      * class ColumnInfo
@@ -235,6 +244,14 @@
 
     IntColumn.prototype = Object.create(ColumnInfo.prototype);
     IntColumn.prototype.constructor = IntColumn;
+
+    /**
+     * setter for sumOutliers
+     * @param {number} sumOutliers
+     */
+    IntColumn.prototype.setSumOutliers = function (sumOutliers) {
+        this.sumOutliers = sumOutliers;
+    }
 
 
     /**
@@ -466,6 +483,10 @@
 
         // render all the charts
         dc.renderAll();
+
+        // after the table is rendered, show a second scrollbar at the top of the table, if needed
+        // jquery DoubleScroll plutin: https://github.com/avianey/jqDoubleScroll
+        $('#dataTableWrapper').doubleScroll({resetOnWindowResize: true, onlyIfScroll: true});
     }
 
 
@@ -479,13 +500,38 @@
 
         if (columnInfo[index].datatype === "int") {
             columnInfo[index] = new IntColumn(columnInfo[index], columnArray);
+            setAndCountOutliers(index);
         } else if (columnInfo[index].datatype === "double") {
             columnInfo[index] = new DoubleColumn(columnInfo[index], columnArray);
+            setAndCountOutliers(index);
         } else if (columnInfo[index].datatype === "boolean") {
             columnInfo[index] = new BooleanColumn(columnInfo[index], columnArray);
         } else if (columnInfo[index].datatype === "string") {
             columnInfo[index] = new StringColumn(columnInfo[index], columnArray);
         }
+    }
+
+
+    /**
+     * after the statistics per column have been calculated, it can be decided if a value is an outlier
+     * this function sets the outliers in cellInfo and the sum of outliers in columnInfo
+     * @param {number} index
+     */
+    function setAndCountOutliers(index) {
+        var sumOutliers = 0;
+
+        for (var i = 0; i < cellInfo.length; i++) {
+            if   ( cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
+                    || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr ) {
+                cellInfo[i][index].setIsOutlier(true);
+                sumOutliers++;
+            }
+            else {
+                cellInfo[i][index].setIsOutlier(false);
+            }
+        }
+
+        columnInfo[index].setSumOutliers(sumOutliers);
     }
 
 
@@ -611,7 +657,7 @@
         histogramCharts[index]
                 .width(300)
                 .height(180)
-                .margins({top: 25, right: 20, bottom: 35, left: 25})
+                .margins({top: 25, right: 20, bottom: 35, left: 35})
                 .centerBar(false)
                 .elasticY(true)
                 .dimension(histogramDimension)
@@ -681,7 +727,6 @@
                         thElements[i].firstChild.nodeValue = columnInfo[i].name;
                     }*/
                 });
-
 
         // TODO: on renderlet formatting of the table: http://stackoverflow.com/questions/26657621/dc-js-datatable-custom-formatting => outliers, missing values etc
         // maybe also relevant: http://stackoverflow.com/questions/25083383/custom-text-filter-for-dc-js-datatable (custom text filter for a dc.js table)

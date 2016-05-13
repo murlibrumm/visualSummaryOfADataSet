@@ -22,3 +22,7 @@
 }
 
 a { cursor: pointer }
+
+#dataTableWrapper {
+  overflow: auto;
+}
