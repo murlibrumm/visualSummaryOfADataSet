@@ -84,15 +84,14 @@
     var allDim;
     // all histogramcharts
     var histogramCharts = [];
-    // url to the csv-file
-    var url = 'data/P16TAbs3.csv';
     // in each row, there is space for 4 histograms, used for storing how many histograms are in the last row currently
     var elemsInHistogramRow = Infinity;
 
     // regular expressions, used for checking the datatype of each cell
-    const regexp_int = /^[\-]{0,1}[0-9]+$/;
-    const regexp_double = /^[\-]{0,1}[0-9]+[\.|,][0-9]+$/;
-    const regexp_boolean = /^(0|1|(true)|false){1}$/;
+    const regexpInt = /^[\-]{0,1}[0-9]+$/;
+    const regexpDoubleComma = /^[\-]{0,1}[0-9]+[\,][0-9]+$/;
+    const regexpDoublePeriod = /^[\-]{0,1}[0-9]+[\.][0-9]+$/;
+    const regexpBoolean = /^(0|1|(true)|false){1}$/;
 
 
 
@@ -104,23 +103,37 @@
      * @param {string} cellValue
      */
     function CellInfo (cellValue) {
-        this.cellValue = cellValue;
+        this.cellValue = cellValue.trim();
         this.isEmpty = false;
         this.isFaulty = false;
         this.isInt = false;
         this.isDouble = false;
         this.isBoolean = false;
 
-        if (cellValue.trim() === "" || cellValue.trim() === "-") {
+        if (this.cellValue === "" || this.cellValue === "-") {
             this.isEmpty = true;
         }
-        if ((regexp_int.exec(cellValue)) !== null) {
-            this.isInt = true
+        if (csvThousandSeparator) {
+            if (regexpInt.exec(this.cellValue.replace(".", "")) !== null) {
+                this.cellValue = this.cellValue.replace(".", "");
+                this.isInt = true
+            }
+        } else {
+            if (regexpInt.exec(this.cellValue) !== null) {
+                this.isInt = true
+            }
         }
-        if ((regexp_double.exec(cellValue)) !== null) {
-            this.isDouble = true;
+        if (csvNumberComma === ",") {
+            if (regexpDoubleComma.exec(this.cellValue) !== null) {
+                this.cellValue = this.cellValue.replace(",", ".");
+                this.isDouble = true;
+            }
+        } else {
+            if (regexpDoublePeriod.exec(this.cellValue) !== null) {
+                this.isDouble = true;
+            }
         }
-        if ((regexp_boolean.exec(cellValue)) !== null) {
+        if (regexpBoolean.exec(this.cellValue) !== null) {
             this.isBoolean = true;
         }
     }
@@ -143,6 +156,7 @@
             this.faultyCount = 0;
             this.sumError = 0;
         } else { // columnInfo
+            // console.log(arguments[0]);
             this.name = arguments[0].name;
             this.intCount = arguments[0].intCount;
             this.doubleCount = arguments[0].doubleCount;
@@ -232,7 +246,7 @@
      */
     function DoubleColumn (columnInfo, columnArray) {
         // call super-constructor
-        IntColumn.call(this);
+        IntColumn.call(this, columnInfo, columnArray);
     }
 
     DoubleColumn.prototype = Object.create(IntColumn.prototype);
@@ -290,14 +304,21 @@
 
 
 // ======================================= DOCUMENT READY FUNCTIONS =======================================
-    // TODO File selector / Dragndrop
+    // TODO File selector / Dragndrop with delimiter chooser
     // when the document is ready (dom loaded), start with the parsing and chart-generating
+    // documentation: https://github.com/mbostock/d3/wiki/CSV
+
+    // url to the csv-file
+    var csvUrl = 'data/grw2010.csv';
+    var csvSeperator = ";";
+    var csvNumberComma = ",";
+    var csvThousandSeparator = true;
     $().ready(function () {
-        $.get(url)
+        $.get(csvUrl)
                 .done(function (data) {
                     console.log("URL fetched");
                     // correct ';' to ',' (';' is often used in german csv-files as delimiter)
-                    csv = d3.csv.parseRows(data.replace(/\s*;\s*/g, ","));
+                    csv = d3.dsv(csvSeperator, "text/csv").parseRows(data);
                     console.log(csv);
                     parseCSVData();
                     generateCharts();
@@ -337,7 +358,7 @@
         csv = deleteRow(csv, 0);
         // console.log(csv);
         cellInfo = deleteRow(cellInfo, 0);
-        // console.log(cellInfo);
+        console.log(cellInfo);
 
         // count int, double, boolean, string, empty for each column
         for (var i = 0; i < columnInfo.length; i++) {
@@ -389,7 +410,7 @@
                 }
             }
         }
-        // console.log(columnInfo);
+        console.log(columnInfo);
 
         // now we can mark cells as faulty, if their datatype and the datatype of their column doesn't match
         for (var m = 0; m < cellInfo.length; m++) {
@@ -406,7 +427,7 @@
 
         // prepend is used for inserting content at the beginning of an element
         // substring from after the last slash until the end
-        $(".dc-data-count").children("h2").prepend(url.substring(url.lastIndexOf("/") + 1) + "; Rows: " + numberOfRows + ", Columns: " + numberOfColumns);
+        $(".dc-data-count").children("h2").prepend(csvUrl.substring(csvUrl.lastIndexOf("/") + 1) + "; Rows: " + numberOfRows + ", Columns: " + numberOfColumns);
     }
 
 
@@ -614,10 +635,10 @@
         // axis formatting https://github.com/mbostock/d3/wiki/Formatting
         // "d" = integer
         // 6 ticks @ y-axis
-        var xAxis_histogramChart = histogramCharts[index].xAxis();
-        xAxis_histogramChart.ticks(6).tickFormat(xAxisTickFormat);
-        var yAxis_histogramChart = histogramCharts[index].yAxis();
-        yAxis_histogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
+        var xAxisHistogramChart = histogramCharts[index].xAxis();
+        xAxisHistogramChart.ticks(6).tickFormat(xAxisTickFormat);
+        var yAxisHistogramChart = histogramCharts[index].yAxis();
+        yAxisHistogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
     }
 
 
@@ -631,6 +652,7 @@
 
         // create an array for the columns, consisting of label, format
         // documentation: http://dc-js.github.io/dc.js/docs/html/dc.dataTable.html#columns__anchor
+        // a closure is needed: https://developer.mozilla.org/en/docs/Web/JavaScript/Closures#Creating_closures_in_loops_A_common_mistake
         var columnArray = [];
         for (var i = 0; i < columnInfo.length; i++) {
             columnArray[i] = {
