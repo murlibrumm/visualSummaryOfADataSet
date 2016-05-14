@@ -21,8 +21,36 @@
   max-width: 300px;
 }
 
-a { cursor: pointer }
+a {
+  cursor: pointer
+}
 
 #dataTableWrapper {
   overflow: auto;
+}
+
+
+
+
+/* upload css */
+.upload-container {
+  width: 500px;
+}
+
+.upload-container > div {
+  padding: 20px 50px;
+}
+
+.upload-container hr {
+  border-top-width: 2px;
+  margin: 15px 0px;
+}
+
+.upload-container .radio {
+  margin-left: 20px;
+}
+
+.upload-container .radioDescription {
+  position: relative;
+  top: 3px;
 }
