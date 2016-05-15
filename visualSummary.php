@@ -66,7 +66,9 @@ if ($uploadOk == 0) {
 }
 ?>
 
-
+<div id="columnStatistics" class="panel">
+    
+</div>
 
 <div class="container-fluid">
     <div class="row">

@@ -11,6 +11,7 @@ function CellInfo (cellValue) {
     this.isInt = false;
     this.isDouble = false;
     this.isBoolean = false;
+    this.isOutlier = false;
 
     if (this.cellValue === "" || this.cellValue === "-") {
         this.isEmpty = true;
@@ -67,7 +68,6 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.booleanCount = 0;
         this.emptyCount = 0;
         this.faultyCount = 0;
-        this.sumError = 0;
     } else { // columnInfo
         // console.log(arguments[0]);
         this.name = arguments[0].name;
@@ -77,7 +77,6 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.emptyCount = arguments[0].emptyCount;
         this.faultyCount = arguments[0].faultyCount;
         this.datatype = arguments[0].datatype;
-        this.sumError = arguments[0].sumError;
     }
 }
 
@@ -102,12 +101,34 @@ ColumnInfo.prototype.setDatatype = function (datatype) {
     this.datatype = datatype;
 }
 
+const closeButton = "<div id='closeColumnStatistics'>[<a href='javascript:closeColumnStatistics()'> x </a>]</div>";
+const divRowStart = "<div class='row'>";
+const divColumnStartTitle = "<div class='col-xs-12 col-stat-title'>";
+const divColumnStartKey = "<div class='col-xs-7 col-stat-key'>";
+const divColumnStartValue = "<div class='col-xs-5 col-stat-value'>";
+const divEnd ="</div>";
+const hrSeparator = "<hr class='hrTable' />";
+
 /**
- * setter for sumError
- * @param {number} sumError
+ * generates html statistics for the column
+ * @return {html}
  */
-ColumnInfo.prototype.setSumError = function (sumError) {
-    this.sumError = sumError;
+ColumnInfo.prototype.createStatistics = function () {
+    var html = closeButton + divRowStart + divColumnStartTitle + "<h3>Statistics for Column <b>" + this.name + "</b></h3>" + divEnd + divEnd;
+    html += this.createStatisticsForProperty("Datatype", this.datatype);
+    html += this.createStatisticsForProperty("Empty cells", this.emptyCount);
+    html += this.createStatisticsForProperty("Faulty cells", this.faultyCount);
+    return html;
+}
+
+/**
+ * generates html statistics for the property
+ * @param {string} property
+ * @param {string} value
+ * @return {html}
+ */
+ColumnInfo.prototype.createStatisticsForProperty = function (property, value) {
+    return divRowStart + divColumnStartKey + property + divEnd + divColumnStartValue + value + divEnd + divEnd;
 }
 
 
@@ -141,9 +162,6 @@ function IntColumn (columnInfo, columnArray) {
     this.max = d3.max(columnArray);
 
     this.uniqueValuesCount = d3.set(columnArray).values().length;
-
-    // TODO this.sumOutliers = sumOutliers;
-    // mean +- 2s or median +- 1.5iqr
 }
 
 IntColumn.prototype = Object.create(ColumnInfo.prototype);
@@ -155,6 +173,27 @@ IntColumn.prototype.constructor = IntColumn;
  */
 IntColumn.prototype.setSumOutliers = function (sumOutliers) {
     this.sumOutliers = sumOutliers;
+}
+
+/**
+ * generates html statistics for the column
+ * @return {html}
+ */
+IntColumn.prototype.createStatistics = function () {
+    var html = ColumnInfo.prototype.createStatistics.call(this);
+    html += hrSeparator;
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Average", this.average.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Median", this.secondQuartile.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "First Quartile", this.firstQuartile.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Third Quartile", this.thirdQuartile.toFixed(2));
+    html += hrSeparator;
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Deviation", this.deviation.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Inter Quartile Range (IQR)", this.iqr.toFixed(2));
+    html += hrSeparator;
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Minimum", this.min.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Maximum", this.max.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of unique values", this.uniqueValuesCount);
+    return html;
 }
 
 
@@ -207,6 +246,21 @@ function StringColumn (columnInfo, columnArray) {
 
 StringColumn.prototype = Object.create(ColumnInfo.prototype);
 StringColumn.prototype.constructor = StringColumn;
+
+/**
+ * generates html statistics for the column
+ * @return {html}
+ */
+StringColumn.prototype.createStatistics = function () {
+    var html = ColumnInfo.prototype.createStatistics.call(this);
+    html += hrSeparator;
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Minimum length", this.minLength);
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Maximum length", this.maxLength);
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Average length", this.averageLength.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of unique values", this.uniqueValuesCount);
+    return html;
+}
+
 
 
 /**

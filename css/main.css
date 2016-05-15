@@ -1,56 +1,137 @@
 /* main.css: add and override styles */
 /* X out of Y records selected */
 .dc-data-count small {
-  font-size: 16px;
+    font-size: 16px;
 }
 
 /* container */
 .container-fluid {
-  padding-left: 40px;
-  padding-right: 40px;
+    padding-left: 40px;
+    padding-right: 40px;
 }
 
 /* axis text */
-.dc-chart .axis text{
-  font-size: 12px;
+.dc-chart .axis text {
+    font-size: 12px;
 }
 
 /* span containing the link and selection of the graphs */
 .resetContainer {
-  position: absolute;
-  max-width: 300px;
+    position: absolute;
+    max-width: 300px;
 }
 
 a {
-  cursor: pointer
+    cursor: pointer
 }
 
+/* wrapper around the table, enable scrolling */
 #dataTableWrapper {
-  overflow: auto;
+    overflow: auto;
 }
-
 
 
 
 /* upload css */
 .upload-container {
-  width: 500px;
+    width: 505px;
 }
 
 .upload-container > div {
-  padding: 20px 50px;
+    padding: 20px 50px;
+    margin-top: 10%;
 }
 
 .upload-container hr {
-  border-top-width: 2px;
-  margin: 15px 0px;
+    border-top-width: 2px;
+    margin: 15px 0px;
 }
 
 .upload-container .radio {
-  margin-left: 20px;
+    margin-left: 20px;
 }
 
 .upload-container .radioDescription {
-  position: relative;
-  top: 3px;
+    position: relative;
+    top: 3px;
+}
+
+.panel {
+    border-radius: 10px;
+    border-width: 3px;
+}
+
+
+
+
+/* statistics per column */
+#columnStatistics {
+    position: fixed;
+    display: none;
+    width: 310px;
+    background-color: #fff;
+    z-index: 2;
+    padding: 25px 30px;
+    top: 50px;
+    left: -10px;
+    border-color: #b5b5b5;
+}
+
+.col-stat-title {
+
+}
+
+.col-stat-key {
+    padding-top: 5px;
+}
+
+.col-stat-value {
+    padding-top: 5px;
+    text-align: right;
+}
+
+#closeColumnStatistics {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+}
+
+
+
+
+/* css for the infosection from the table */
+.dc-table-head .columnDatatype {
+    font-family: Courier New;
+    float: left;
+}
+
+.dc-table-head .columnInfo {
+    background-image: url("../img/info.png");
+    float: right;
+    width: 23px;
+    height: 23px;
+}
+
+.emptyValue {
+    background-color: #cdd7fa;
+}
+
+.fautlyValue {
+    background-color: #fad9cd;
+}
+
+.outlierValue {
+    background-color: #cdfad0;
+}
+
+.hrTable {
+    margin: 5px 0px;
+}
+
+.dc-table-column {
+    padding: 0px !important;
+}
+
+.dc-table-column div {
+    padding: 8px;
 }

@@ -256,7 +256,7 @@ function generateCharts() {
     dc.renderAll();
 
     // after the table is rendered, show a second scrollbar at the top of the table, if needed
-    // jquery DoubleScroll plutin: https://github.com/avianey/jqDoubleScroll
+    // jquery DoubleScroll plugin: https://github.com/avianey/jqDoubleScroll
     $('#dataTableWrapper').doubleScroll({resetOnWindowResize: true, onlyIfScroll: true});
 }
 
@@ -267,18 +267,47 @@ function generateCharts() {
  */
 function calculateColumnStats (index) {
 
+    // first, set the faulty-flag
+    setFaultyFlag(index);
+
+    // then calculate the statistics per column
     var columnArray = getColumnPropertyFromObjectInArray(cellInfo, index, "cellValue");
 
     if (columnInfo[index].datatype === "int") {
         columnInfo[index] = new IntColumn(columnInfo[index], columnArray);
-        setAndCountOutliers(index);
     } else if (columnInfo[index].datatype === "double") {
         columnInfo[index] = new DoubleColumn(columnInfo[index], columnArray);
-        setAndCountOutliers(index);
     } else if (columnInfo[index].datatype === "boolean") {
         columnInfo[index] = new BooleanColumn(columnInfo[index], columnArray);
     } else if (columnInfo[index].datatype === "string") {
         columnInfo[index] = new StringColumn(columnInfo[index], columnArray);
+    }
+
+    // then set the outlier-flag
+    if (columnInfo[index].datatype === "int" || columnInfo[index].datatype === "double") {
+        setAndCountOutliers(index);
+    }
+}
+
+
+
+/**
+ * after the statistics per column have been calculated, it can be decided if a value is an outlier
+ * this function sets the outliers in cellInfo and the sum of outliers in columnInfo
+ * @param {number} index
+ */
+function setFaultyFlag(index) {
+    for (var i = 0; i < cellInfo.length; i++) {
+        if (columnInfo[index].datatype == "int" &&
+            cellInfo[i][index].isInt == false) {
+            cellInfo[i][index].isFaulty = true;
+        } else if (columnInfo[index].datatype == "double" &&
+            cellInfo[i][index].isInt == false && cellInfo[i][index].isDouble == false) {
+            cellInfo[i][index].isFaulty = true;
+        } else if (columnInfo[index].datatype == "boolean" &&
+            cellInfo[i][index].isBoolean == false) {
+            cellInfo[i][index].isFaulty = true;
+        }
     }
 }
 
@@ -291,6 +320,7 @@ function calculateColumnStats (index) {
 function setAndCountOutliers(index) {
     var sumOutliers = 0;
 
+    // calculation of outliers: mean +- 2s or robust: median +- 1.5iqr
     for (var i = 0; i < cellInfo.length; i++) {
         if   ( cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
             || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr ) {
@@ -322,7 +352,7 @@ function createHistogramPlot (index) {
 
     // init chart & table
     /* structure to create:
-     <div class="col-xs-6 col-md-3">
+     <div class="col-xs-6 col-lg-3">
      <div id="chartX-histogram">
      <span class="resetContainer">
      <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
@@ -341,7 +371,7 @@ function createHistogramPlot (index) {
     }
 
     var columnDiv = d3.select("#histograms>div:last-child").append("div")
-        .attr("class", "col-xs-6 col-md-3");
+        .attr("class", "col-xs-6 col-lg-3");
     elemsInHistogramRow++;
 
     var chartDiv = columnDiv.append("div")
@@ -477,8 +507,18 @@ function createDataTable() {
     var columnArray = [];
     for (var i = 0; i < columnInfo.length; i++) {
         columnArray[i] = {
-            label: columnInfo[i].name,
-            format: (function(i){ return function(d) {return d[i].cellValue;}; })(i)
+            label: "<div class='columnName'>" + columnInfo[i].name + "</div><hr class='hrTable' />",
+            format: (function(i){ return function(d) {
+                var cssClasses =
+                    ((d[i].isFaulty) ? "faultyValue" : "") +
+                    ((d[i].isEmpty) ? " emptyValue" : "") +
+                    ((d[i].isOutlier) ? " outlierValue" : "");
+                if (cssClasses != "") {
+                    cssClasses = " class='" + cssClasses + "'";
+                }
+
+                return "<div" + cssClasses + ">" + d[i].cellValue + "</div>";
+            }; })(i)
         };
     }
     //console.log(columnArray);
@@ -496,11 +536,22 @@ function createDataTable() {
         .on('renderlet', function (table) {
             // each time table is rendered remove nasty extra row dc.js insists on adding
             table.select('tr.dc-table-group').remove();
+
             /* change the header
              var thElements = $('#data-table').children('th');
              for (var i = 0; i < thElements.length; i++) {
              thElements[i].firstChild.nodeValue = columnInfo[i].name;
              }*/
+
+            // add info-button to the header
+            $('.dc-table-head').each(function (index, Element) {
+                d3.select(Element).append("span")
+                    .attr("class", "columnDatatype")
+                    .html(columnInfo[index].datatype);
+                d3.select(Element).append("div")
+                    .attr("class", "columnInfo")
+                    .attr("onclick", "javascript:showColumnStatistics(" + index + ")");
+            });
         });
 
     // TODO: on renderlet formatting of the table: http://stackoverflow.com/questions/26657621/dc-js-datatable-custom-formatting => outliers, missing values etc
@@ -548,4 +599,24 @@ function getColumnPropertyFromObjectInArray (array, index, property) {
         column[i] = array[i][index][property];
     }
     return column;
+}
+
+
+
+// ======================================= ONCLICK FUNCTIONS =======================================
+/**
+ * displays the statitical information for a column in a div
+ * @param {number} index
+ */
+function showColumnStatistics (index) {
+    var html = columnInfo[index].createStatistics();
+    $("#columnStatistics")[0].innerHTML = html;
+    $("#columnStatistics")[0].style.display = "block";
+}
+
+/**
+ * closes the column-statitical-information-div
+ */
+function closeColumnStatistics () {
+    $("#columnStatistics")[0].style.display = "none";
 }
