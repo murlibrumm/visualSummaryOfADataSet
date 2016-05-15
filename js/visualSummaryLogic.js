@@ -33,10 +33,12 @@
 // ======================================= GLOBAL VARIABLE DECLARATIONS =======================================
 // the data from the csv-file
 var csv;
-// 3D-array with the data from the csv, inside each cell is a CellInfo-Object, extended with info about Datatypes
+// 2D-array with the data from the csv, inside each cell is a CellInfo-Object, extended with info about Datatypes
 var cellInfo = [];
-// 2D-array with info about each column, inside each cell is a ColumnInfo-Object
+// 1D-array with info about each column, inside each cell is a ColumnInfo-Object
 var columnInfo = [];
+// 2D-array with the covariances of the columns
+var covarianceMatrix = [];
 // the crossfilter from our csv-file => used for brusing and linking
 var ndx;
 // dimension for the table, with the whole csv as dimension
@@ -64,7 +66,7 @@ const regexpBoolean = /^(0|1|(true)|false){1}$/;
 
 $().ready(function () {
     // check hidden input fields for the csv-parameters
-    csvUrl =                $("#csvTargetFile")[0].value;
+    csvUrl = $("#csvTargetFile")[0].value;
 
     switch ($("#csvSeparator")[0].value) {
         case "comma":
@@ -102,6 +104,7 @@ $().ready(function () {
             break;
     }
 
+    // parse each row from the csv-file
     $.get(csvUrl)
         .done(function (data) {
             console.log("URL fetched");
@@ -244,7 +247,8 @@ function generateCharts() {
     }
 
     // create covariance matrix
-    // TODO
+    createCovarianceMatrix();
+    console.log(covarianceMatrix);
 
     // create multivarate/interesting plots
     // TODO
@@ -261,6 +265,45 @@ function generateCharts() {
 }
 
 
+
+/**
+ * calculates the covarianceMatrix, stores it in covarianceMatrix
+ */
+function createCovarianceMatrix () {
+    for (var i = 0; i < columnInfo.length; i++) {
+        covarianceMatrix[i] = [];
+        for (var n = 0; n < columnInfo.length; n++) {
+            if (n > i && (columnInfo[n].datatype == "int" || columnInfo[n].datatype == "double") && (columnInfo[i].datatype == "int" || columnInfo[i].datatype == "double")) {
+                covarianceMatrix[i][n] = calculateCovariance(i, n);
+            } else {
+                covarianceMatrix[i][n] = null;
+            }
+        }
+    }
+}
+
+
+
+/**
+ * calculates the covarianceMatrix for two columns [i], [n]
+ * @param {number} i
+ * @param {number} n
+ */
+function calculateCovariance(i, n) {
+    var sum = 0;
+    var sumNonFaultyPairs = 0;
+    for (var row = 0; row < cellInfo.length; row++) {
+        if (!cellInfo[row][i].isFaulty && !cellInfo[row][n].isFaulty) {
+            sumNonFaultyPairs++;
+            sum += (cellInfo[row][i].cellValue - columnInfo[i].average) * (cellInfo[row][n].cellValue - columnInfo[n].average);
+        }
+    }
+    // covariance_i,n / sqrt ( variance_i * variance_n )
+    return ( sum / sumNonFaultyPairs ) / Math.sqrt ( Math.pow(columnInfo[i].deviation, 2) * Math.pow(columnInfo[n].deviation, 2) );
+}
+
+
+
 /**
  * calculates stats for each column, the stats depend on the datatype of the column
  * @param {number} index
@@ -271,7 +314,7 @@ function calculateColumnStats (index) {
     setFaultyFlag(index);
 
     // then calculate the statistics per column
-    var columnArray = getColumnPropertyFromObjectInArray(cellInfo, index, "cellValue");
+    var columnArray = getColumnPropertyFromObjectInArray(cellInfo, index, "cellValue", false);
 
     if (columnInfo[index].datatype === "int") {
         columnInfo[index] = new IntColumn(columnInfo[index], columnArray);
@@ -322,8 +365,9 @@ function setAndCountOutliers(index) {
 
     // calculation of outliers: mean +- 2s or robust: median +- 1.5iqr
     for (var i = 0; i < cellInfo.length; i++) {
-        if   ( cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
-            || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr ) {
+        if   ( !cellInfo[i][index].isFaulty &&
+              (cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
+            || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr )) {
             cellInfo[i][index].setIsOutlier(true);
             sumOutliers++;
         }
@@ -423,13 +467,13 @@ function createHistogramPlot (index) {
 
 
         // setup some variables for the histogram
-        var xScale = d3.scale.linear().domain(histogramRange);
-        var xUnits = dc.units.fp.precision(histogramBinWidth);
-        var roundFunction = function(d) { // with this command, only whole columns can be selected
+        xScale = d3.scale.linear().domain(histogramRange);
+        xUnits = dc.units.fp.precision(histogramBinWidth);
+        roundFunction = function(d) { // with this command, only whole columns can be selected
             return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
         };
-        var orderingFunction = null;
-        var xAxisTickFormat = d3.format("d");
+        orderingFunction = null;
+        xAxisTickFormat = d3.format("d");
 
     } else { // boolean or string => ordinal scale instead of linear scale
 
@@ -437,11 +481,11 @@ function createHistogramPlot (index) {
         if (columnInfo[index].datatype === "boolean") {
             histogramDimension = ndx.dimension(function (d) {
                 if (d[index].cellValue != true && d[index].cellValue != false) {
-                    return "?"
+                    return "?";
                 }
                 else {
-                    return d[index].cellValue
-                };
+                    return d[index].cellValue;
+                }
             });
         } else {
             histogramDimension = ndx.dimension(function (d) { return d[index].cellValue; });
@@ -451,11 +495,11 @@ function createHistogramPlot (index) {
         histogramGrouping = histogramDimension.group(); // by default reduceCount
 
         // setup some variables for the histogram
-        var xScale = d3.scale.ordinal();
-        var xUnits = dc.units.ordinal;
-        var roundFunction = null;
-        var orderingFunction = function(d) { return -d.value; } // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
-        var xAxisTickFormat = "";
+        xScale = d3.scale.ordinal();
+        xUnits = dc.units.ordinal;
+        roundFunction = null;
+        orderingFunction = function(d) { return -d.value; }; // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
+        xAxisTickFormat = "";
     }
 
     // fill chart
@@ -543,6 +587,9 @@ function createDataTable() {
              thElements[i].firstChild.nodeValue = columnInfo[i].name;
              }*/
 
+            // on renderlet formatting of the table: http://stackoverflow.com/questions/26657621/dc-js-datatable-custom-formatting => outliers, missing values etc
+            // maybe also relevant: http://bl.ocks.org/jun9/raw/5631952/, http://stackoverflow.com/questions/25083383/custom-text-filter-for-dc-js-datatable
+
             // add info-button to the header
             $('.dc-table-head').each(function (index, Element) {
                 d3.select(Element).append("span")
@@ -553,18 +600,15 @@ function createDataTable() {
                     .attr("onclick", "javascript:showColumnStatistics(" + index + ")");
             });
         });
-
-    // TODO: on renderlet formatting of the table: http://stackoverflow.com/questions/26657621/dc-js-datatable-custom-formatting => outliers, missing values etc
-    // maybe also relevant: http://bl.ocks.org/jun9/raw/5631952/, http://stackoverflow.com/questions/25083383/custom-text-filter-for-dc-js-datatable
 }
 
 
 /**
  * deletes the row with rownumber [row] from the [array]
  * used eg. for deleting the first row (header), after extracting the data from it
- * @param {array} array
+ * @param {Array} array
  * @param {number} row
- * @returns {array}
+ * @returns {Array}
  */
 function deleteRow(array, row) {
     array = array.slice(0); // make copy
@@ -575,9 +619,9 @@ function deleteRow(array, row) {
 
 /**
  * selects a column [index] from an array [array], and returns it
- * @param {array} array
+ * @param {Array} array
  * @param {number} index
- * @returns {array}
+ * @returns {Array}
  */
 function getColumnFromArray (array, index) {
     var column= [];
@@ -589,14 +633,18 @@ function getColumnFromArray (array, index) {
 
 /**
  * selects a column [index] from an array [array], and returns it
- * @param {array} array
+ * @param {Array} array
  * @param {number} index
- * @returns {array}
+ * @param {string} property
+ * @param {boolean} includeFaultyValues
+ * @returns {Array}
  */
-function getColumnPropertyFromObjectInArray (array, index, property) {
+function getColumnPropertyFromObjectInArray (array, index, property, includeFaultyValues) {
     var column= [];
     for (var i = 0; i < array.length; i++) {
-        column[i] = array[i][index][property];
+        if (includeFaultyValues || !array[i][index]['isFaulty']) {
+            column.push(array[i][index][property]);
+        }
     }
     return column;
 }
@@ -610,13 +658,15 @@ function getColumnPropertyFromObjectInArray (array, index, property) {
  */
 function showColumnStatistics (index) {
     var html = columnInfo[index].createStatistics();
-    $("#columnStatistics")[0].innerHTML = html;
-    $("#columnStatistics")[0].style.display = "block";
+    var statisticsDiv = $("#columnStatistics")[0];
+    statisticsDiv.innerHTML = html;
+    statisticsDiv.style.display = "block";
 }
 
 /**
  * closes the column-statitical-information-div
  */
 function closeColumnStatistics () {
-    $("#columnStatistics")[0].style.display = "none";
+    var statisticsDiv = $("#columnStatistics")[0];
+    statisticsDiv.style.display = "none";
 }

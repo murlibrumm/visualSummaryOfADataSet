@@ -13,8 +13,8 @@
 
 
 
-<!-- code from http://www.w3schools.com/php/php_file_upload.asp -->
 <?php
+// code from http://www.w3schools.com/php/php_file_upload.asp
 $debug = false;
 $target_dir = "uploads/";
 $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
@@ -67,7 +67,7 @@ if ($uploadOk == 0) {
 ?>
 
 <div id="columnStatistics" class="panel">
-    
+
 </div>
 
 <div class="container-fluid">

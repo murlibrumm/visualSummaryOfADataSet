@@ -50,7 +50,7 @@ function CellInfo (cellValue) {
  */
 CellInfo.prototype.setIsOutlier = function (isOutlier) {
     this.isOutlier = isOutlier;
-}
+};
 
 
 /**
@@ -82,7 +82,7 @@ function ColumnInfo ( /* name | columnInfo */) {
 
 /**
  * counts the int, double, boolean, empty values in the array (the array must contain CellInfo-objects)
- * @param {array} array
+ * @param {Array} array
  */
 ColumnInfo.prototype.countDataTypes = function (array) {
     for (var i = 0; i < array.length; i++) {
@@ -91,7 +91,7 @@ ColumnInfo.prototype.countDataTypes = function (array) {
         if (array[i].isBoolean) this.booleanCount++;
         if (array[i].isEmpty)   this.emptyCount++;
     }
-}
+};
 
 /**
  * setter for datatype
@@ -99,7 +99,7 @@ ColumnInfo.prototype.countDataTypes = function (array) {
  */
 ColumnInfo.prototype.setDatatype = function (datatype) {
     this.datatype = datatype;
-}
+};
 
 const closeButton = "<div id='closeColumnStatistics'>[<a href='javascript:closeColumnStatistics()'> x </a>]</div>";
 const divRowStart = "<div class='row'>";
@@ -119,7 +119,7 @@ ColumnInfo.prototype.createStatistics = function () {
     html += this.createStatisticsForProperty("Empty cells", this.emptyCount);
     html += this.createStatisticsForProperty("Faulty cells", this.faultyCount);
     return html;
-}
+};
 
 /**
  * generates html statistics for the property
@@ -129,7 +129,7 @@ ColumnInfo.prototype.createStatistics = function () {
  */
 ColumnInfo.prototype.createStatisticsForProperty = function (property, value) {
     return divRowStart + divColumnStartKey + property + divEnd + divColumnStartValue + value + divEnd + divEnd;
-}
+};
 
 
 /**
@@ -137,7 +137,7 @@ ColumnInfo.prototype.createStatisticsForProperty = function (property, value) {
  * constructor, calculates the statistics for the [columnArray]
  * [columnInfo] is redirected to the super-constructor
  * @param {ColumnInfo} columnInfo
- * @param {array} columnArray
+ * @param {Array} columnArray
  */
 function IntColumn (columnInfo, columnArray) {
     // call super-constructor
@@ -173,7 +173,7 @@ IntColumn.prototype.constructor = IntColumn;
  */
 IntColumn.prototype.setSumOutliers = function (sumOutliers) {
     this.sumOutliers = sumOutliers;
-}
+};
 
 /**
  * generates html statistics for the column
@@ -194,7 +194,7 @@ IntColumn.prototype.createStatistics = function () {
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Maximum", this.max.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of unique values", this.uniqueValuesCount);
     return html;
-}
+};
 
 
 /**
@@ -202,7 +202,7 @@ IntColumn.prototype.createStatistics = function () {
  * constructor
  * [columnInfo] is redirected to the super-constructor (IntColumn), which has the same statistics as DoubleColumn
  * @param {ColumnInfo} columnInfo
- * @param {array} columnArray
+ * @param {Array} columnArray
  */
 function DoubleColumn (columnInfo, columnArray) {
     // call super-constructor
@@ -218,7 +218,7 @@ DoubleColumn.prototype.constructor = DoubleColumn;
  * constructor, calculates the statistics for the [columnArray]
  * [columnInfo] is redirected to the super-constructor
  * @param {ColumnInfo} columnInfo
- * @param {array} columnArray
+ * @param {Array} columnArray
  */
 function StringColumn (columnInfo, columnArray) {
     // call super-constructor
@@ -259,7 +259,7 @@ StringColumn.prototype.createStatistics = function () {
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Average length", this.averageLength.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of unique values", this.uniqueValuesCount);
     return html;
-}
+};
 
 
 
@@ -267,7 +267,7 @@ StringColumn.prototype.createStatistics = function () {
  * class BooleanColumn extends ColumnInfo
  * constructor, BooleanColumn does not have any stats to calculate
  * @param {ColumnInfo} columnInfo
- * @param {array} columnArray
+ * @param {Array} columnArray
  */
 function BooleanColumn (columnInfo, columnArray) {
     // call super-constructor
