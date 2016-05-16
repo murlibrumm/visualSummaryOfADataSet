@@ -32,6 +32,13 @@ a {
 
 
 
+/* histograms */
+#histograms {
+    margin-top: 15px;
+}
+
+
+
 /* upload css */
 .upload-container {
     width: 510px;
@@ -102,7 +109,7 @@ a {
 
 
 
-/* correlation, 45 degree header from http://jimmybonney.com/articles/column_header_rotation_css/ */
+/* correlation-table, 45 degree header from http://jimmybonney.com/articles/column_header_rotation_css/ */
 #correlationTable td {
     border: 1px solid #ddd;
 }
@@ -176,6 +183,7 @@ td.correlationBody {
     height: 23px;
 }
 
+/* css for the empty, faulty, outlier-values from the table */
 .emptyValue, .tableLegendEmpty .coloredLegend {
     background-color: #cdd7fa;
 }
@@ -196,8 +204,10 @@ td.correlationBody {
     padding: 0px !important;
 }
 
-.dc-table-column div {
+.dc-table-column>div {
     padding: 8px;
+    height: 100%;
+    width: 100%;
 }
 
 
@@ -221,4 +231,12 @@ td.correlationBody {
 
 .tableLegendInner {
     clear: right;
+}
+
+
+
+/* correlation-matrix-link at the left of the legend */
+.showCorrelationMatrix {
+    float: left;
+    padding-top: 25px;
 }

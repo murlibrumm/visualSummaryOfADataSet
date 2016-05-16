@@ -319,7 +319,6 @@ function createCovarianceMatrix () {
     }
     htmlTopRow += "</tr>";
 
-    console.log(htmlTopRow + html);
     $("#correlationTable")[0].innerHTML = htmlTopRow + html;
 }
 
@@ -447,10 +446,6 @@ function createHistogramPlot (index) {
     // TODO oder 500 rows 1 unique wert, sowohl bei int, boolean, als auch string
     // TODO oder wenn nur fehler rows (is derzeit ein bug)
 
-    // create dimension & grouping (x- & y-values)
-    var histogramDimension;
-    var histogramGrouping;
-
     // init chart & table
     /* structure to create:
      <div class="col-xs-6 col-lg-3">
@@ -498,6 +493,10 @@ function createHistogramPlot (index) {
 
     histogramCharts[index] = dc.barChart("#" + chartDivId);
 
+    // create dimension & grouping (x- & y-values)
+    var histogramDimension;
+    var histogramGrouping;
+
     var xScale, xUnits, roundFunction, orderingFunction, xAxisTickFormat;
 
     // check datatype of column, react accordingly
@@ -516,12 +515,15 @@ function createHistogramPlot (index) {
 
         // dimension = x-axis values => ranges
         histogramDimension = ndx.dimension(function(d) {
-            return histogramRange[0] + (Math.floor((d[index].cellValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+            if (d[index].isEmpty || d[index].isFaulty) {
+                return -Infinity;
+            } else {
+                return histogramRange[0] + (Math.floor((d[index].cellValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+            }
         });
 
         // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
         histogramGrouping = histogramDimension.group(); // by default reduceCount
-
 
         // setup some variables for the histogram
         xScale = d3.scale.linear().domain(histogramRange);
@@ -534,18 +536,27 @@ function createHistogramPlot (index) {
 
     } else { // boolean or string => ordinal scale instead of linear scale
 
-        // dimension = x-axis values => ranges
+        // dimension = x-axis values
         if (columnInfo[index].datatype === "boolean") {
             histogramDimension = ndx.dimension(function (d) {
                 if (d[index].cellValue != true && d[index].cellValue != false) {
-                    return "?";
+                    return "faulty cell";
                 }
                 else {
                     return d[index].cellValue;
                 }
             });
         } else {
-            histogramDimension = ndx.dimension(function (d) { return d[index].cellValue; });
+            histogramDimension = ndx.dimension(function (d) {
+                if (d[index].isEmpty) {
+                    return "empty cell";
+                } else if (d[index].isFaulty) {
+                    return "fautly cell";
+                } else {
+                    return d[index].cellValue;
+                }
+            });
+
         }
 
         // grouping = y-axis values => items grouped by histogram-parts, how many items per histogram-part?
@@ -594,6 +605,18 @@ function createHistogramPlot (index) {
 }
 
 
+function remove_empty_bins(source_group) {
+    return {
+        all: function () {
+            return source_group.all().filter(function (d) {
+                console.log(d.value);
+                return d.value != null;
+            });
+        }
+    };
+}
+
+
 /**
  * creates a data table, with full data
  * brushing and linking is enabled
@@ -618,7 +641,9 @@ function createDataTable() {
                     cssClasses = " class='" + cssClasses + "'";
                 }
 
-                return "<div" + cssClasses + ">" + d[i].cellValue + "</div>";
+                var value = (d[i].isEmpty) ? "&nbsp;" : d[i].cellValue;
+
+                return "<div" + cssClasses + ">" + value + "</div>";
             }; })(i)
         };
     }

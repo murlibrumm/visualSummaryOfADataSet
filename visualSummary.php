@@ -86,14 +86,11 @@ if ($uploadOk == 0) {
     </div>
 
     <div class="row">
-        <h3><a href="javascript:showCorrelationMatrix()">Show Correlation Matrix!</a></h3>
-    </div>
-
-    <div class="row">
         <div id="histograms"></div>
     </div>
 
     <div class="row">
+        <h3 class="showCorrelationMatrix"><a href="javascript:showCorrelationMatrix()">Show Correlation Matrix!</a></h3>
         <div class="tableLegend">
             <h4>Table legend:</h4>
             <div class="tableLegendEmpty tableLegendInner">
