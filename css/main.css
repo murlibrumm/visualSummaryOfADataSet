@@ -34,7 +34,7 @@ a {
 
 /* upload css */
 .upload-container {
-    width: 505px;
+    width: 510px;
 }
 
 .upload-container > div {
@@ -65,16 +65,20 @@ a {
 
 
 /* statistics per column */
-#columnStatistics {
-    position: fixed;
+#columnStatistics, #correlationDiv {
     display: none;
-    width: 310px;
-    background-color: #fff;
-    z-index: 2;
-    padding: 25px 30px;
+    position: fixed;
     top: 50px;
     left: -10px;
-    border-color: #b5b5b5;
+    background-color: #fff;
+    border-color: #ddd;
+    z-index: 2;
+
+}
+
+#columnStatistics {
+    padding: 25px 30px;
+    width: 310px;
 }
 
 .col-stat-title {
@@ -104,13 +108,7 @@ a {
 }
 
 #correlationDiv {
-    top: 50px;
-    left: -10px;
-    position: fixed;
-    z-index: 3;
     padding: 40px 140px 25px 25px;
-    border-color: #ddd;
-    background-color: #fff;
 }
 
 td.correlationHead45 {
@@ -178,15 +176,15 @@ td.correlationBody {
     height: 23px;
 }
 
-.emptyValue {
+.emptyValue, .tableLegendEmpty .coloredLegend {
     background-color: #cdd7fa;
 }
 
-.fautlyValue {
+.fautlyValue, .tableLegendFaulty .coloredLegend {
     background-color: #fad9cd;
 }
 
-.outlierValue {
+.outlierValue, .tableLegendOutlier .coloredLegend {
     background-color: #cdfad0;
 }
 
@@ -200,4 +198,27 @@ td.correlationBody {
 
 .dc-table-column div {
     padding: 8px;
+}
+
+
+
+/* table legend */
+.tableLegend {
+    padding-right: 20px;
+    float: right;
+}
+
+.coloredLegend {
+    width: 16px;
+    height: 16px;
+    float: right;
+}
+
+.legendText {
+    padding-right: 5px;
+    float: right;
+}
+
+.tableLegendInner {
+    clear: right;
 }

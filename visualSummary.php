@@ -94,6 +94,27 @@ if ($uploadOk == 0) {
     </div>
 
     <div class="row">
+        <div class="tableLegend">
+            <h4>Table legend:</h4>
+            <div class="tableLegendEmpty tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">empty cell</span>
+
+            </div>
+            <div class="tableLegendFaulty tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">faulty value</span>
+
+            </div>
+            <div class="tableLegendOutlier tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">outlier value</span>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
         <div class="col-xs-12" id="dataTableWrapper">
             <table class="table table-bordered table-striped" id="data-table"></table>
         </div>
