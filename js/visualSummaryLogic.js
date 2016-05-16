@@ -187,15 +187,17 @@ function parseCSVData() {
             for (var m = 0; m < cellInfo.length; m++) {
 
                 // change to int and double values from string
-                if (columnInfo[i].datatype === "int" ||
-                    columnInfo[i].datatype === "double") {
-                    cellInfo[m][i].cellValue = +cellInfo[m][i].cellValue;
-                } else { // boolean
-                    // TODO maybe state, that the value was changed (0 => false), and visualize it in the table?
-                    if (cellInfo[m][i].cellValue === "0" || cellInfo[m][i].cellValue.trim() === "false") {
-                        cellInfo[m][i].cellValue = false;
-                    } else if (cellInfo[m][i].cellValue === "1" || cellInfo[m][i].cellValue.trim() === "true") {
-                        cellInfo[m][i].cellValue = true;
+                if (!cellInfo[m][i].isEmpty) {
+                    if (columnInfo[i].datatype === "int" ||
+                        columnInfo[i].datatype === "double") {
+                        cellInfo[m][i].cellValue = +cellInfo[m][i].cellValue;
+                    } else { // boolean
+                        // TODO maybe state, that the value was changed (0 => false), and visualize it in the table?
+                        if (cellInfo[m][i].cellValue === "0" || cellInfo[m][i].cellValue.trim() === "false") {
+                            cellInfo[m][i].cellValue = false;
+                        } else if (cellInfo[m][i].cellValue === "1" || cellInfo[m][i].cellValue.trim() === "true") {
+                            cellInfo[m][i].cellValue = true;
+                        }
                     }
                 }
             }
@@ -204,16 +206,8 @@ function parseCSVData() {
     console.log(columnInfo);
 
     // now we can mark cells as faulty, if their datatype and the datatype of their column doesn't match
-    for (var m = 0; m < cellInfo.length; m++) {
-
-        for (var i = 0; i < cellInfo[m].length; i++) {
-            if   ( (columnInfo[i].datatype === "int"     && !cellInfo[m][i].isInt)
-                || (columnInfo[i].datatype === "double"  && !cellInfo[m][i].isDouble)
-                || (columnInfo[i].datatype === "boolean" && !cellInfo[m][i].isBoolean) ){
-                cellInfo[m][i].isFaulty = true;
-                columnInfo[i].faultyCount++;
-            }
-        }
+    for (var i = 0; i < columnInfo.length; i++) {
+        setFaultyFlag(i);
     }
 
     // prepend is used for inserting content at the beginning of an element
@@ -246,7 +240,9 @@ function generateCharts() {
 
     // create histograms for all columns
     for (var i = 0; i < columnInfo.length; i++) {
-        createHistogramPlot(i);
+        if (histogramMakesSense(i)) {
+            createHistogramPlot(i);
+        }
     }
 
     // create correlation matrix
@@ -265,6 +261,27 @@ function generateCharts() {
     // after the table is rendered, show a second scrollbar at the top of the table, if needed
     // jquery DoubleScroll plugin: https://github.com/avianey/jqDoubleScroll
     $('#dataTableWrapper').doubleScroll({resetOnWindowResize: true, onlyIfScroll: true});
+}
+
+
+
+/**
+ * checks if it makes sense, to plot a histogram for the column [index]
+ * @param {number} index
+ */
+function histogramMakesSense(index) {
+    // don't plot histogram if:
+    // 1) the row contains only faulty and empty values (valid for all datatypes)
+    // 2) the row has only one unique value (valid for all datatypes)
+    if (columnInfo[index].emptyCount + columnInfo[index].faultyCount == cellInfo.length ||
+        columnInfo[index].uniqueValuesCount == 1) {
+        return false;
+    }
+    // 3) the row has only unique values (valid for string only)
+    if (columnInfo[index].datatype == "string" && columnInfo[index].uniqueValuesCount == cellInfo.length) {
+        return false;
+    }
+    return true;
 }
 
 
@@ -366,9 +383,6 @@ function calculateCorrelation(i, n) {
  */
 function calculateColumnStats (index) {
 
-    // first, set the faulty-flag
-    setFaultyFlag(index);
-
     // then calculate the statistics per column
     var columnArray = getColumnPropertyFromObjectInArray(cellInfo, index, "cellValue", false);
 
@@ -391,21 +405,29 @@ function calculateColumnStats (index) {
 
 
 /**
- * after the statistics per column have been calculated, it can be decided if a value is an outlier
- * this function sets the outliers in cellInfo and the sum of outliers in columnInfo
+ * calcluates if the values from column [i] are faulty
  * @param {number} index
  */
 function setFaultyFlag(index) {
     for (var i = 0; i < cellInfo.length; i++) {
-        if (columnInfo[index].datatype == "int" &&
-            cellInfo[i][index].isInt == false) {
-            cellInfo[i][index].isFaulty = true;
-        } else if (columnInfo[index].datatype == "double" &&
-            cellInfo[i][index].isInt == false && cellInfo[i][index].isDouble == false) {
-            cellInfo[i][index].isFaulty = true;
-        } else if (columnInfo[index].datatype == "boolean" &&
-            cellInfo[i][index].isBoolean == false) {
-            cellInfo[i][index].isFaulty = true;
+
+        if (!cellInfo[i][index].isEmpty) {
+
+            if (columnInfo[index].datatype == "int" &&
+                cellInfo[i][index].isInt == false) {
+                cellInfo[i][index].isFaulty = true;
+                columnInfo[index].faultyCount++;
+
+            } else if (columnInfo[index].datatype == "double" &&
+                cellInfo[i][index].isInt == false && cellInfo[i][index].isDouble == false) {
+                cellInfo[i][index].isFaulty = true;
+                columnInfo[index].faultyCount++;
+
+            } else if (columnInfo[index].datatype == "boolean" &&
+                cellInfo[i][index].isBoolean == false) {
+                cellInfo[i][index].isFaulty = true;
+                columnInfo[index].faultyCount++;
+            }
         }
     }
 }
@@ -421,7 +443,7 @@ function setAndCountOutliers(index) {
 
     // calculation of outliers: mean +- 2s or robust: median +- 1.5iqr
     for (var i = 0; i < cellInfo.length; i++) {
-        if   ( !cellInfo[i][index].isFaulty &&
+        if   ( !cellInfo[i][index].isFaulty && !cellInfo[i][index].isEmpty &&
               (cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
             || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr )) {
             cellInfo[i][index].setIsOutlier(true);
@@ -442,19 +464,14 @@ function setAndCountOutliers(index) {
  * @param {number} index
  */
 function createHistogramPlot (index) {
-    // TODO kein histogramm machen wenn bei string werten 500 rows, 500 unique werte
-    // TODO oder 500 rows 1 unique wert, sowohl bei int, boolean, als auch string
-    // TODO oder wenn nur fehler rows (is derzeit ein bug)
-
-    // init chart & table
-    /* structure to create:
+    /* structure to create for each histogram:
      <div class="col-xs-6 col-lg-3">
-     <div id="chartX-histogram">
-     <span class="resetContainer">
-     <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
-     <span class="reset" style="display: none;"> <span class="filter"></span></span>
-     </span>
-     </div>
+         <div id="chartX-histogram">
+             <span class="resetContainer">
+                 <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
+                 <span class="reset" style="display: none;"> <span class="filter"></span></span>
+             </span>
+         </div>
      </div>*/
 
     // documentation: https://github.com/mbostock/d3/wiki/Selections
@@ -490,7 +507,7 @@ function createHistogramPlot (index) {
         .attr("class", "filter");
     resetSpan.append("br");
 
-
+    // add the new div to the histogramCharts-array
     histogramCharts[index] = dc.barChart("#" + chartDivId);
 
     // create dimension & grouping (x- & y-values)
@@ -605,18 +622,6 @@ function createHistogramPlot (index) {
 }
 
 
-function remove_empty_bins(source_group) {
-    return {
-        all: function () {
-            return source_group.all().filter(function (d) {
-                console.log(d.value);
-                return d.value != null;
-            });
-        }
-    };
-}
-
-
 /**
  * creates a data table, with full data
  * brushing and linking is enabled
@@ -718,13 +723,13 @@ function getColumnFromArray (array, index) {
  * @param {Array} array
  * @param {number} index
  * @param {string} property
- * @param {boolean} includeFaultyValues
+ * @param {boolean} includeFaultyEmptyValues
  * @returns {Array}
  */
-function getColumnPropertyFromObjectInArray (array, index, property, includeFaultyValues) {
+function getColumnPropertyFromObjectInArray (array, index, property, includeFaultyEmptyValues) {
     var column= [];
     for (var i = 0; i < array.length; i++) {
-        if (includeFaultyValues || !array[i][index]['isFaulty']) {
+        if (includeFaultyEmptyValues || (!array[i][index]['isFaulty'] && !array[i][index]['isEmpty'])) {
             column.push(array[i][index][property]);
         }
     }
