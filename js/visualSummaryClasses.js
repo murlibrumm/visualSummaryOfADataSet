@@ -101,7 +101,7 @@ ColumnInfo.prototype.setDatatype = function (datatype) {
     this.datatype = datatype;
 };
 
-const closeButton = "<div id='closeColumnStatistics'>[<a href='javascript:closeColumnStatistics()'> x </a>]</div>";
+const closeButton = "<div class='closeInformationDiv'>[<a href='javascript:closeColumnStatistics()'> x </a>]</div>";
 const divRowStart = "<div class='row'>";
 const divColumnStartTitle = "<div class='col-xs-12 col-stat-title'>";
 const divColumnStartKey = "<div class='col-xs-7 col-stat-key'>";

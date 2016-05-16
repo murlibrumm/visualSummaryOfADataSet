@@ -90,12 +90,78 @@ a {
     text-align: right;
 }
 
-#closeColumnStatistics {
+.closeInformationDiv {
     position: absolute;
     top: 10px;
     right: 10px;
 }
 
+
+
+/* correlation, 45 degree header from http://jimmybonney.com/articles/column_header_rotation_css/ */
+#correlationTable td {
+    border: 1px solid #ddd;
+}
+
+#correlationDiv {
+    top: 50px;
+    left: -10px;
+    position: fixed;
+    z-index: 3;
+    padding: 40px 140px 25px 25px;
+    border-color: #ddd;
+    background-color: #fff;
+}
+
+td.correlationHead45 {
+    height: 120px;
+    width: 50px;
+    min-width: 50px;
+    max-width: 50px;
+    position: relative;
+    vertical-align: bottom;
+    padding: 0;
+    font-size: 12px;
+    line-height: 0.8;
+    border: 0px !important;
+}
+
+td.correlationHead45 > div {
+    position: relative;
+    top: 0px;
+    left: 60px; /* 120 * tan(45) / 2 = 60 where 120 is the height on the cell and 45 is the transform angle*/
+    height: 100%;
+    -ms-transform:skew(-45deg,0deg);
+    -moz-transform:skew(-45deg,0deg);
+    -webkit-transform:skew(-45deg,0deg);
+    -o-transform:skew(-45deg,0deg);
+    transform:skew(-45deg,0deg);
+    overflow: hidden;
+    border-left: 1px solid #dddddd;
+    border-right: 1px solid #dddddd;
+    border-top: 1px solid #dddddd;
+}
+
+td.correlationHead45 span {
+    -ms-transform:skew(45deg,0deg) rotate(315deg);
+    -moz-transform:skew(45deg,0deg) rotate(315deg);
+    -webkit-transform:skew(45deg,0deg) rotate(315deg);
+    -o-transform:skew(45deg,0deg) rotate(315deg);
+    transform:skew(45deg,0deg) rotate(315deg);
+    position: absolute;
+    bottom: 37px; /* 50 cos(45) = 35 with an additional 2px margin*/
+    left: -25px; /*Because it looked good, but there is probably a mathematical link here as well*/
+    display: inline-block;
+/* width: 100%;*/
+    width: 95px; /* 120 / cos(45) - 50 cos (45) = 134??? where 120 is the height of the cell, 50 the width of the cell and 45 the transform angle*/
+    text-align: left;
+/* white-space: nowrap; */ /*whether to display in one line or not*/
+}
+
+td.correlationBody {
+    width: 50px;
+    padding: 5px;
+}
 
 
 

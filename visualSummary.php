@@ -66,8 +66,11 @@ if ($uploadOk == 0) {
 }
 ?>
 
-<div id="columnStatistics" class="panel">
+<div id="columnStatistics" class="panel"></div>
 
+<div id="correlationDiv" class="panel">
+    <div class='closeInformationDiv'>[<a href='javascript:closeCorrelationMatrix()'> x </a>]</div>
+    <table id="correlationTable"></table>
 </div>
 
 <div class="container-fluid">
@@ -82,7 +85,13 @@ if ($uploadOk == 0) {
         </div>
     </div>
 
-    <div id="histograms"></div>
+    <div class="row">
+        <h3><a href="javascript:showCorrelationMatrix()">Show Correlation Matrix!</a></h3>
+    </div>
+
+    <div class="row">
+        <div id="histograms"></div>
+    </div>
 
     <div class="row">
         <div class="col-xs-12" id="dataTableWrapper">

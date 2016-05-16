@@ -38,7 +38,7 @@ var cellInfo = [];
 // 1D-array with info about each column, inside each cell is a ColumnInfo-Object
 var columnInfo = [];
 // 2D-array with the covariances of the columns
-var covarianceMatrix = [];
+var correlationMatrix = [];
 // the crossfilter from our csv-file => used for brusing and linking
 var ndx;
 // dimension for the table, with the whole csv as dimension
@@ -238,6 +238,9 @@ function generateCharts() {
     ndx = crossfilter(cellInfo);
     allDim = ndx.dimension(function (d) { return d; });
 
+    // create data-count-widget at the top of the page
+    createDataCountWidget();
+
     console.log(columnInfo);
     console.log(cellInfo);
 
@@ -246,9 +249,9 @@ function generateCharts() {
         createHistogramPlot(i);
     }
 
-    // create covariance matrix
+    // create correlation matrix
     createCovarianceMatrix();
-    console.log(covarianceMatrix);
+    console.log(correlationMatrix);
 
     // create multivarate/interesting plots
     // TODO
@@ -265,31 +268,85 @@ function generateCharts() {
 }
 
 
-
 /**
- * calculates the covarianceMatrix, stores it in covarianceMatrix
+ * creates the data-count-widget at the top of the page
  */
-function createCovarianceMatrix () {
-    for (var i = 0; i < columnInfo.length; i++) {
-        covarianceMatrix[i] = [];
-        for (var n = 0; n < columnInfo.length; n++) {
-            if (n > i && (columnInfo[n].datatype == "int" || columnInfo[n].datatype == "double") && (columnInfo[i].datatype == "int" || columnInfo[i].datatype == "double")) {
-                covarianceMatrix[i][n] = calculateCovariance(i, n);
-            } else {
-                covarianceMatrix[i][n] = null;
-            }
-        }
-    }
+function createDataCountWidget() {
+    var dataCount = dc.dataCount('#data-count');
+    dataCount
+        .dimension(ndx)
+        .group(ndx.groupAll());
+
+    // register handlers
+    d3.selectAll('a#all').on('click', function () {
+        dc.filterAll();
+        dc.renderAll();
+    });
 }
 
 
 
 /**
- * calculates the covarianceMatrix for two columns [i], [n]
+ * calculates the correlationMatrix, stores it in correlationMatrix
+ */
+function createCovarianceMatrix () {
+    var htmlTopRow = "<tr><td class='correlationHead45'></td>";
+    var html = "";
+    for (var i = 0; i < columnInfo.length; i++) {
+        var columnIsNumberI = columnInfo[i].datatype == "int" || columnInfo[i].datatype == "double";
+        if (columnIsNumberI) {
+            htmlTopRow += "<td class='correlationHead45'><div><span>" + columnInfo[i].name + "</span></div></td>";
+        }
+        correlationMatrix[i] = [];
+
+        for (var n = 0; n < columnInfo.length; n++) {
+            var columnIsNumberN = columnInfo[n].datatype == "int" || columnInfo[n].datatype == "double";
+            if (n == 0 && columnIsNumberI) {
+                html += "<tr><td class='correlationHead'>" + columnInfo[i].name + "</td>";
+            }
+
+            if (columnIsNumberN && columnIsNumberI) {
+                if (n > i) {
+                    correlationMatrix[i][n] = calculateCorrelation(i, n);
+                    html += "<td class='correlationBody' style='background-color: " + getHSLColor(correlationMatrix[i][n]) + "'>" + correlationMatrix[i][n].toFixed(2) + "</td>";
+                } else {
+                    correlationMatrix[i][n] = null;
+                    html += "<td class='correlationBody'></td>";
+                }
+            }
+        }
+        html += "</tr>";
+    }
+    htmlTopRow += "</tr>";
+
+    console.log(htmlTopRow + html);
+    $("#correlationTable")[0].innerHTML = htmlTopRow + html;
+}
+
+
+/**
+ * HSL reference: http://www.ncl.ucar.edu/Applications/Images/colormap_6_3_lg.png
+ * @param {number} correlation
+ */
+function getHSLColor(correlation) {
+    // correlation is a value from -1 to 1
+    // -1 = red   = 0   in HSL
+    // +1 = green = 120 in HSL
+    correlation += 1;
+    // now:
+    // 0 = red   = 0   in HSL
+    // 2 = green = 120 in HSL
+    var hue = (correlation * 60).toString(10);
+    return ["hsl(",hue,",100%,50%)"].join("");
+}
+
+
+/**
+ * calculates the correlationMatrix for two columns [i], [n]
  * @param {number} i
  * @param {number} n
  */
-function calculateCovariance(i, n) {
+function calculateCorrelation(i, n) {
     var sum = 0;
     var sumNonFaultyPairs = 0;
     for (var row = 0; row < cellInfo.length; row++) {
@@ -298,7 +355,7 @@ function calculateCovariance(i, n) {
             sum += (cellInfo[row][i].cellValue - columnInfo[i].average) * (cellInfo[row][n].cellValue - columnInfo[n].average);
         }
     }
-    // covariance_i,n / sqrt ( variance_i * variance_n )
+    // correlation_i,n = covariance_i,n / sqrt ( variance_i * variance_n )
     return ( sum / sumNonFaultyPairs ) / Math.sqrt ( Math.pow(columnInfo[i].deviation, 2) * Math.pow(columnInfo[n].deviation, 2) );
 }
 
@@ -657,6 +714,7 @@ function getColumnPropertyFromObjectInArray (array, index, property, includeFaul
  * @param {number} index
  */
 function showColumnStatistics (index) {
+    closeCorrelationMatrix();
     var html = columnInfo[index].createStatistics();
     var statisticsDiv = $("#columnStatistics")[0];
     statisticsDiv.innerHTML = html;
@@ -669,4 +727,21 @@ function showColumnStatistics (index) {
 function closeColumnStatistics () {
     var statisticsDiv = $("#columnStatistics")[0];
     statisticsDiv.style.display = "none";
+}
+
+/**
+ * displays the correlation-matrix-div
+ */
+function showCorrelationMatrix () {
+    closeColumnStatistics();
+    var correlationDiv = $("#correlationDiv")[0];
+    correlationDiv.style.display = "block";
+}
+
+/**
+ * closes the correlation-matrix-div
+ */
+function closeCorrelationMatrix () {
+    var correlationDiv = $("#correlationDiv")[0];
+    correlationDiv.style.display = "none";
 }
