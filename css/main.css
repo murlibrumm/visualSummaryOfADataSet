@@ -188,7 +188,7 @@ td.correlationBody {
     background-color: #cdd7fa;
 }
 
-.fautlyValue, .tableLegendFaulty .coloredLegend {
+.faultyValue, .tableLegendFaulty .coloredLegend {
     background-color: #fad9cd;
 }
 

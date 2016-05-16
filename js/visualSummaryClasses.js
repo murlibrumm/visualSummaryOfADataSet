@@ -240,7 +240,7 @@ function StringColumn (columnInfo, columnArray) {
 
     this.minLength = minStringLength;
     this.maxLength = maxStringLength;
-    this.averageLength = sumStringLength /= (columnArray.length - this.emptyCount);
+    this.averageLength = sumStringLength /= columnArray.length;
     this.uniqueValuesCount = d3.set(columnArray).values().length;
 }
 
