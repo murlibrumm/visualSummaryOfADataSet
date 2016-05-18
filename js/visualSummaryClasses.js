@@ -44,12 +44,22 @@ function CellInfo (cellValue) {
     }
 }
 
+
 /**
  * setter for isOutlier
  * @param {boolean} isOutlier
  */
 CellInfo.prototype.setIsOutlier = function (isOutlier) {
     this.isOutlier = isOutlier;
+};
+
+
+/**
+ * setter for isFaulty
+ * @param {boolean} isFaulty
+ */
+CellInfo.prototype.setIsFaulty = function (isFaulty) {
+    this.isFaulty = isFaulty;
 };
 
 
@@ -168,11 +178,11 @@ IntColumn.prototype = Object.create(ColumnInfo.prototype);
 IntColumn.prototype.constructor = IntColumn;
 
 /**
- * setter for sumOutliers
- * @param {number} sumOutliers
+ * setter for outlierCount
+ * @param {number} outlierCount
  */
-IntColumn.prototype.setSumOutliers = function (sumOutliers) {
-    this.sumOutliers = sumOutliers;
+IntColumn.prototype.setOutlierCount = function (outlierCount) {
+    this.outlierCount = outlierCount;
 };
 
 /**
@@ -189,6 +199,7 @@ IntColumn.prototype.createStatistics = function () {
     html += hrSeparator;
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Deviation", this.deviation.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Inter Quartile Range (bias removed)", this.iqr.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of Outliers", this.outlierCount);
     html += hrSeparator;
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Minimum", this.min.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Maximum", this.max.toFixed(2));

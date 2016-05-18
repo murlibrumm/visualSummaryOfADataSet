@@ -415,17 +415,17 @@ function setFaultyFlag(index) {
 
             if (columnInfo[index].datatype == "int" &&
                 cellInfo[i][index].isInt == false) {
-                cellInfo[i][index].isFaulty = true;
+                cellInfo[i][index].setIsFaulty(true);
                 columnInfo[index].faultyCount++;
 
             } else if (columnInfo[index].datatype == "double" &&
                 cellInfo[i][index].isInt == false && cellInfo[i][index].isDouble == false) {
-                cellInfo[i][index].isFaulty = true;
+                cellInfo[i][index].setIsFaulty(true);
                 columnInfo[index].faultyCount++;
 
             } else if (columnInfo[index].datatype == "boolean" &&
                 cellInfo[i][index].isBoolean == false) {
-                cellInfo[i][index].isFaulty = true;
+                cellInfo[i][index].setIsFaulty(true);
                 columnInfo[index].faultyCount++;
             }
         }
@@ -439,7 +439,7 @@ function setFaultyFlag(index) {
  * @param {number} index
  */
 function setAndCountOutliers(index) {
-    var sumOutliers = 0;
+    var outlierCount = 0;
 
     // calculation of outliers: mean +- 2s or robust: median +- 1.5iqr
     for (var i = 0; i < cellInfo.length; i++) {
@@ -447,14 +447,14 @@ function setAndCountOutliers(index) {
               (cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
             || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr )) {
             cellInfo[i][index].setIsOutlier(true);
-            sumOutliers++;
+            outlierCount++;
         }
         else {
             cellInfo[i][index].setIsOutlier(false);
         }
     }
 
-    columnInfo[index].setSumOutliers(sumOutliers);
+    columnInfo[index].setOutlierCount(outlierCount);
 }
 
 
