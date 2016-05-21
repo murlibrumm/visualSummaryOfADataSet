@@ -172,7 +172,7 @@ function IntColumn (columnInfo, columnArray) {
     this.thirdQuartile  = d3.quantile(columnArray, 0.75);
 
     // iqr = interquartile range = robust measure of scale
-    // divide by 1.349 to remove bias
+    // divide by 1.349 to get a normal-consistent estimator
     this.iqr = (this.thirdQuartile - this.firstQuartile) / 1.349;
     this.deviation = d3.deviation(columnArray);
 
@@ -207,7 +207,7 @@ IntColumn.prototype.createStatistics = function () {
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Third quartile", this.thirdQuartile.toFixed(2));
     html += hrSeparator;
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Standard deviation", this.deviation.toFixed(2));
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Interquartile range (bias removed)", this.iqr.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Interquartile range (normal-consistent estimator)", this.iqr.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of outliers", this.outlierCount);
     html += hrSeparator;
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Minimum", this.min.toFixed(2));
