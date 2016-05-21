@@ -4,6 +4,10 @@
     font-size: 16px;
 }
 
+.dc-data-count {
+    margin-right: 0px;
+}
+
 /* container */
 .container-fluid {
     padding-left: 40px;
@@ -183,18 +187,8 @@ td.correlationBody {
     height: 23px;
 }
 
-/* css for the empty, faulty, outlier-values from the table */
-.emptyValue, .tableLegendEmpty .coloredLegend {
-    background-color: #cdd7fa;
-}
 
-.faultyValue, .tableLegendFaulty .coloredLegend {
-    background-color: #fad9cd;
-}
 
-.outlierValue, .tableLegendOutlier .coloredLegend {
-    background-color: #cdfad0;
-}
 
 .hrTable {
     margin: 5px 0px;
@@ -212,9 +206,49 @@ td.correlationBody {
 
 
 
+/* css for the empty, faulty, outlier-values from the table & for the legend */
+.emptyValue, .tableLegendEmpty .coloredLegend {
+    background-color: #cdd7fa;
+}
+
+.faultyValue, .tableLegendFaulty .coloredLegend {
+    background-color: #fad9cd;
+}
+
+.outlierValue, .tableLegendOutlier .coloredLegend {
+    background-color: #cdfad0;
+}
+
+
+
+
+/* histogram-legend colors */
+.tableLegendInt .coloredLegend {
+    background-color: #8C3365;
+}
+
+.tableLegendDouble .coloredLegend {
+    background-color: #33558C;
+}
+
+.tableLegendString .coloredLegend {
+    background-color: #388C32;
+}
+
+.tableLegendBoolean .coloredLegend {
+    background-color: #8C6F33;
+}
+
+
+
+
 /* table legend */
 .tableLegend {
     padding-right: 20px;
+    float: right;
+}
+
+.tableLegend h4 {
     float: right;
 }
 
@@ -231,6 +265,10 @@ td.correlationBody {
 
 .tableLegendInner {
     clear: right;
+}
+
+.tableLegendHistogram {
+    margin-top: 15px;
 }
 
 

@@ -52,6 +52,8 @@ var csvUrl;
 var csvSeperator;
 var csvDecimalMark;
 var csvThousandsSeparator;
+// colors for the histograms
+var histogramColors = [];
 // regular expressions, used for checking the datatype of each cell
 const regexpInt = /^[\-]{0,1}[0-9]+$/;
 const regexpDoubleComma = /^[\-]{0,1}[0-9]+[\,][0-9]+$/;
@@ -103,6 +105,12 @@ $().ready(function () {
             csvThousandsSeparator = ",";
             break;
     }
+
+    // initialize the histogramColorArray
+    histogramColors["int"]     = "#8C3365";
+    histogramColors["double"]  = "#33558C";
+    histogramColors["string"]  = "#388C32";
+    histogramColors["boolean"] = "#8C6F33";
 
     // parse each row from the csv-file
     $.get(csvUrl)
@@ -610,7 +618,7 @@ function createHistogramPlot (index) {
         .elasticY(true)
         .dimension(histogramDimension)
         .group(histogramGrouping)
-        .colors("#C11E1C")
+        .colors(histogramColors[columnInfo[index].datatype])
         .x(xScale)
         .xUnits(xUnits) // x-axis precision = binWidth
         .renderHorizontalGridLines(true)

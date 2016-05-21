@@ -75,13 +75,32 @@ if ($uploadOk == 0) {
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-xs-12 dc-data-count" id="data-count">
+        <div class="col-xs-9 dc-data-count" id="data-count">
             <h2>
                 <small>
                     <span class="filter-count"></span> selected out of <span class="total-count"></span> records |
                     <a id="all" href="#">Reset All</a>
                 </small>
             </h2>
+        </div>
+        <div class="col-xs-3 tableLegend tableLegendHistogram">
+            <h4>Histogram legend:</h4>
+            <div class="tableLegendInt tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">Integer-column</span>
+            </div>
+            <div class="tableLegendDouble tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">Double-column</span>
+            </div>
+            <div class="tableLegendString tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">String-column</span>
+            </div>
+            <div class="tableLegendBoolean tableLegendInner">
+                <div class="coloredLegend"></div>
+                <span class="legendText">Boolean-column</span>
+            </div>
         </div>
     </div>
 
@@ -96,17 +115,14 @@ if ($uploadOk == 0) {
             <div class="tableLegendEmpty tableLegendInner">
                 <div class="coloredLegend"></div>
                 <span class="legendText">empty cell</span>
-
             </div>
             <div class="tableLegendFaulty tableLegendInner">
                 <div class="coloredLegend"></div>
                 <span class="legendText">faulty value</span>
-
             </div>
             <div class="tableLegendOutlier tableLegendInner">
                 <div class="coloredLegend"></div>
                 <span class="legendText">outlier value</span>
-
             </div>
         </div>
     </div>
