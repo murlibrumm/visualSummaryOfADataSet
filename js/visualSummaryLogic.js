@@ -374,7 +374,7 @@ function calculateCorrelation(i, n) {
     var sum = 0;
     var sumNonFaultyPairs = 0;
     for (var row = 0; row < cellInfo.length; row++) {
-        if (!cellInfo[row][i].isFaulty && !cellInfo[row][n].isFaulty) {
+        if (!cellInfo[row][i].isEmpty && !cellInfo[row][i].isFaulty && !cellInfo[row][n].isEmpty && !cellInfo[row][n].isFaulty) {
             sumNonFaultyPairs++;
             sum += (cellInfo[row][i].cellValue - columnInfo[i].average) * (cellInfo[row][n].cellValue - columnInfo[n].average);
         }
@@ -513,7 +513,6 @@ function createHistogramPlot (index) {
         .html(" ");
     resetSpan.append("span")
         .attr("class", "filter");
-    resetSpan.append("br");
 
     // add the new div to the histogramCharts-array
     histogramCharts[index] = dc.barChart("#" + chartDivId);
@@ -522,7 +521,7 @@ function createHistogramPlot (index) {
     var histogramDimension;
     var histogramGrouping;
 
-    var xScale, xUnits, roundFunction, orderingFunction, xAxisTickFormat;
+    var xScale, xUnits, roundFunction, orderingFunction, hideXAxisText;
 
     // check datatype of column, react accordingly
     if (columnInfo[index].datatype === "int" || columnInfo[index].datatype === "double") { // int or double
@@ -532,7 +531,13 @@ function createHistogramPlot (index) {
         // add half a bin to the lower and upper end
         // in the end, we have 11 bins
 
-        var histogramBinWidth = Math.round((columnInfo[index].max - columnInfo[index].min) / 10);
+        // TODO Freedman Diaconis bin-width
+
+        var histogramBinWidth = (columnInfo[index].max - columnInfo[index].min) / 10;
+        if (columnInfo[index].datatype == "int") {
+            histogramBinWidth = Math.round(histogramBinWidth);
+        }
+
         var histogramRange = [columnInfo[index].min - histogramBinWidth/2, columnInfo[index].max + histogramBinWidth/2];
         /*console.log("low: " + histogramRange[0]);
          console.log("high: " + histogramRange[1]);
@@ -543,6 +548,7 @@ function createHistogramPlot (index) {
             if (d[index].isEmpty || d[index].isFaulty) {
                 return -Infinity;
             } else {
+                // rounds all the values to the low-threshold of the bin they fit in
                 return histogramRange[0] + (Math.floor((d[index].cellValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
             }
         });
@@ -557,7 +563,7 @@ function createHistogramPlot (index) {
             return histogramRange[0] + (Math.round((d - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
         };
         orderingFunction = null;
-        xAxisTickFormat = d3.format("d");
+        hideXAxisText = false;
 
     } else { // boolean or string => ordinal scale instead of linear scale
 
@@ -592,7 +598,7 @@ function createHistogramPlot (index) {
         xUnits = dc.units.ordinal;
         roundFunction = null;
         orderingFunction = function(d) { return -d.value; }; // order descending http://stackoverflow.com/questions/25204782/sorting-ordering-the-bars-in-a-bar-chart-by-the-bar-values-with-dc-js
-        xAxisTickFormat = "";
+        hideXAxisText = true;
     }
 
     // fill chart
@@ -624,7 +630,10 @@ function createHistogramPlot (index) {
     // "d" = integer
     // 6 ticks @ y-axis
     var xAxisHistogramChart = histogramCharts[index].xAxis();
-    xAxisHistogramChart.ticks(6).tickFormat(xAxisTickFormat);
+    if (hideXAxisText) {
+        xAxisHistogramChart.tickFormat("");
+    }
+    xAxisHistogramChart.ticks(5);
     var yAxisHistogramChart = histogramCharts[index].yAxis();
     yAxisHistogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
 }
