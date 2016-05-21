@@ -11,36 +11,41 @@ function CellInfo (cellValue) {
     this.isInt = false;
     this.isDouble = false;
     this.isBoolean = false;
+    this.isString = false;
     this.isOutlier = false;
 
     if (this.cellValue === "" || this.cellValue === "-") {
         this.isEmpty = true;
-    }
-
-    if (csvThousandsSeparator != "") {
-        if (regexpInt.exec(this.cellValue.replace(csvThousandsSeparator, "")) !== null) {
-            this.cellValue = this.cellValue.replace(csvThousandsSeparator, "");
-            this.isInt = true
-        }
     } else {
-        if (regexpInt.exec(this.cellValue) !== null) {
-            this.isInt = true
+        if (csvThousandsSeparator != "") {
+            if (regexpInt.exec(this.cellValue.replace(csvThousandsSeparator, "")) !== null) {
+                this.cellValue = this.cellValue.replace(csvThousandsSeparator, "");
+                this.isInt = true;
+            }
+        } else {
+            if (regexpInt.exec(this.cellValue) !== null) {
+                this.isInt = true;
+            }
         }
-    }
 
-    if (csvDecimalMark != ".") {
-        if (regexpDoubleComma.exec(this.cellValue) !== null) {
-            this.cellValue = this.cellValue.replace(csvDecimalMark, ".");
-            this.isDouble = true;
+        if (csvDecimalMark != ".") {
+            if (regexpDoubleComma.exec(this.cellValue) !== null) {
+                this.cellValue = this.cellValue.replace(csvDecimalMark, ".");
+                this.isDouble = true;
+            }
+        } else {
+            if (regexpDoublePeriod.exec(this.cellValue) !== null) {
+                this.isDouble = true;
+            }
         }
-    } else {
-        if (regexpDoublePeriod.exec(this.cellValue) !== null) {
-            this.isDouble = true;
-        }
-    }
 
-    if (regexpBoolean.exec(this.cellValue) !== null) {
-        this.isBoolean = true;
+        if (regexpBoolean.exec(this.cellValue) !== null) {
+            this.isBoolean = true;
+        }
+
+        if (!this.isBoolean && !this.isDouble && !this.isInt) {
+            this.isString = true;
+        }
     }
 }
 
@@ -76,6 +81,7 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.intCount = 0;
         this.doubleCount = 0;
         this.booleanCount = 0;
+        this.stringCount = 0;
         this.emptyCount = 0;
         this.faultyCount = 0;
     } else { // columnInfo
@@ -84,6 +90,7 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.intCount = arguments[0].intCount;
         this.doubleCount = arguments[0].doubleCount;
         this.booleanCount = arguments[0].booleanCount;
+        this.stringCount = arguments[0].stringCount;
         this.emptyCount = arguments[0].emptyCount;
         this.faultyCount = arguments[0].faultyCount;
         this.datatype = arguments[0].datatype;
@@ -99,6 +106,7 @@ ColumnInfo.prototype.countDataTypes = function (array) {
         if (array[i].isInt)     this.intCount++;
         if (array[i].isDouble)  this.doubleCount++;
         if (array[i].isBoolean) this.booleanCount++;
+        if (array[i].isString)  this.stringCount++;
         if (array[i].isEmpty)   this.emptyCount++;
     }
 };
@@ -163,7 +171,7 @@ function IntColumn (columnInfo, columnArray) {
     this.secondQuartile = d3.quantile(columnArray, 0.5);
     this.thirdQuartile  = d3.quantile(columnArray, 0.75);
 
-    // iqr = inter quartile range = robust measure of scale
+    // iqr = interquartile range = robust measure of scale
     // divide by 1.349 to remove bias
     this.iqr = (this.thirdQuartile - this.firstQuartile) / 1.349;
     this.deviation = d3.deviation(columnArray);
@@ -172,6 +180,7 @@ function IntColumn (columnInfo, columnArray) {
     this.max = d3.max(columnArray);
 
     this.uniqueValuesCount = d3.set(columnArray).values().length;
+    this.outlierCount = 0;
 }
 
 IntColumn.prototype = Object.create(ColumnInfo.prototype);
@@ -192,14 +201,14 @@ IntColumn.prototype.setOutlierCount = function (outlierCount) {
 IntColumn.prototype.createStatistics = function () {
     var html = ColumnInfo.prototype.createStatistics.call(this);
     html += hrSeparator;
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Average", this.average.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Arithmetic mean", this.average.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Median", this.secondQuartile.toFixed(2));
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "First Quartile", this.firstQuartile.toFixed(2));
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Third Quartile", this.thirdQuartile.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "First quartile", this.firstQuartile.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Third quartile", this.thirdQuartile.toFixed(2));
     html += hrSeparator;
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Deviation", this.deviation.toFixed(2));
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Inter Quartile Range (bias removed)", this.iqr.toFixed(2));
-    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of Outliers", this.outlierCount);
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Standard deviation", this.deviation.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Interquartile range (bias removed)", this.iqr.toFixed(2));
+    html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Number of outliers", this.outlierCount);
     html += hrSeparator;
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Minimum", this.min.toFixed(2));
     html += ColumnInfo.prototype.createStatisticsForProperty.call(this, "Maximum", this.max.toFixed(2));

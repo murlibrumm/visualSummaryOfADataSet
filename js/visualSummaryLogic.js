@@ -179,7 +179,9 @@ function parseCSVData() {
             columnDatatype = "boolean";
         }
 
+        // set the colum-data-type and the faulty flag
         columnInfo[i].setDatatype(columnDatatype);
+        setFaultyFlag(i);
 
         // change data types of the values
         if (columnInfo[i].datatype != "string") {
@@ -187,7 +189,7 @@ function parseCSVData() {
             for (var m = 0; m < cellInfo.length; m++) {
 
                 // change to int and double values from string
-                if (!cellInfo[m][i].isEmpty) {
+                if (!cellInfo[m][i].isEmpty && !cellInfo[m][i].isFaulty) {
                     if (columnInfo[i].datatype === "int" ||
                         columnInfo[i].datatype === "double") {
                         cellInfo[m][i].cellValue = +cellInfo[m][i].cellValue;
@@ -206,9 +208,9 @@ function parseCSVData() {
     console.log(columnInfo);
 
     // now we can mark cells as faulty, if their datatype and the datatype of their column doesn't match
-    for (var i = 0; i < columnInfo.length; i++) {
+    /*for (var i = 0; i < columnInfo.length; i++) {
         setFaultyFlag(i);
-    }
+    }*/
 
     // prepend is used for inserting content at the beginning of an element
     // substring from after the last slash until the end
@@ -307,9 +309,12 @@ function createDataCountWidget() {
  * calculates the correlationMatrix, stores it in correlationMatrix
  */
 function createCovarianceMatrix () {
+    // save the 45 degree header and the rest of the table in 2 different variables
+    // merge them to return the full html
     var htmlTopRow = "<tr><td class='correlationHead45'></td>";
     var html = "";
     for (var i = 0; i < columnInfo.length; i++) {
+        // create the 45 degree header row (at the top), only double- or int-columns are allowed
         var columnIsNumberI = columnInfo[i].datatype == "int" || columnInfo[i].datatype == "double";
         if (columnIsNumberI) {
             htmlTopRow += "<td class='correlationHead45'><div><span>" + columnInfo[i].name + "</span></div></td>";
@@ -317,11 +322,13 @@ function createCovarianceMatrix () {
         correlationMatrix[i] = [];
 
         for (var n = 0; n < columnInfo.length; n++) {
+            // add the left column with columnnames, only double- or int-columns are allowed
             var columnIsNumberN = columnInfo[n].datatype == "int" || columnInfo[n].datatype == "double";
             if (n == 0 && columnIsNumberI) {
                 html += "<tr><td class='correlationHead'>" + columnInfo[i].name + "</td>";
             }
 
+            // calculate correlation if both are numbers, and if n > i (upper right triangle of the matrix)
             if (columnIsNumberN && columnIsNumberI) {
                 if (n > i) {
                     correlationMatrix[i][n] = calculateCorrelation(i, n);
@@ -342,7 +349,8 @@ function createCovarianceMatrix () {
 
 /**
  * HSL reference: http://www.ncl.ucar.edu/Applications/Images/colormap_6_3_lg.png
- * @param {number} correlation
+ * calculates the color based on the correlation of two values
+ * @param {number} correlation, value between -1 and 1
  */
 function getHSLColor(correlation) {
     // correlation is a value from -1 to 1
@@ -649,7 +657,7 @@ function createDataTable() {
                 var value = (d[i].isEmpty) ? "&nbsp;" : d[i].cellValue;
 
                 return "<div" + cssClasses + ">" + value + "</div>";
-            }; })(i)
+            }; }(i))
         };
     }
     //console.log(columnArray);
