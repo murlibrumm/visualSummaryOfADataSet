@@ -172,6 +172,7 @@ function parseCSVData() {
         var columnDatatype = "string";
         const numberOfNonEmptyCells = numberOfRows - columnInfo[i].emptyCount;
         const datatypeTreshold = numberOfNonEmptyCells * 0.8;
+        const datatypeTresholdBoolean = numberOfNonEmptyCells * 0.9;
         // TODO numbers fiddling
 
         if (columnInfo[i].intCount >= datatypeTreshold) {
@@ -183,7 +184,7 @@ function parseCSVData() {
         } else if (columnInfo[i].doubleCount >= datatypeTreshold) {
             columnDatatype = "double";
         }
-        if (columnInfo[i].booleanCount >= datatypeTreshold) {
+        if (columnInfo[i].booleanCount >= datatypeTresholdBoolean) {
             columnDatatype = "boolean";
         }
 
@@ -460,8 +461,8 @@ function setAndCountOutliers(index) {
     // calculation of outliers: mean +- 2s or robust: median +- 1.5iqr
     for (var i = 0; i < cellInfo.length; i++) {
         if   ( !cellInfo[i][index].isFaulty && !cellInfo[i][index].isEmpty &&
-              (cellInfo[i][index].cellValue < columnInfo[index].secondQuartile - 1.5 * columnInfo[index].iqr
-            || cellInfo[i][index].cellValue > columnInfo[index].secondQuartile + 1.5 * columnInfo[index].iqr )) {
+              (cellInfo[i][index].cellValue < columnInfo[index].firstQuartile - 1.5 * columnInfo[index].iqr
+            || cellInfo[i][index].cellValue > columnInfo[index].thirdQuartile + 1.5 * columnInfo[index].iqr )) {
             cellInfo[i][index].setIsOutlier(true);
             outlierCount++;
         }
@@ -703,6 +704,36 @@ function createDataTable() {
             // maybe also relevant: http://bl.ocks.org/jun9/raw/5631952/, http://stackoverflow.com/questions/25083383/custom-text-filter-for-dc-js-datatable
 
             // add info-button to the header
+
+            /*var newHeaderRow = d3.select('#data-table').select('thead').append("tr");
+            for (var i = 0; i < columnInfo.length; i++) {
+                var infoTh = newHeaderRow.append("th")
+                    .attr("class", "dc-table-head");
+                infoTh.append("span")
+                    .attr("class", "columnDatatype")
+                    .html(columnInfo[i].datatype);
+                infoTh.append("div")
+                    .attr("class", "columnInfo")
+                    .attr("onclick", "javascript:showColumnStatistics(" + i + ")");
+            }
+
+            var newHeaderRow = d3.select('#data-table').select('thead').append("tr");
+            for (var i = 0; i < columnInfo.length; i++) {
+                var infoTh = newHeaderRow.append("th")
+                    .attr("class", "dc-table-head dcTableHeadComposition");
+                var columnComposition = infoTh.append("div")
+                    .attr("class", "columnComposition");
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionValid")
+                    .attr("style", "width: " + ((cellInfo.length - columnInfo[i].emptyCount - columnInfo[i].faultyCount) / cellInfo.length) * 100 + "%;");
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionEmpty")
+                    .attr("style", "width: " + (columnInfo[i].emptyCount / cellInfo.length) * 100 + "%;");
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionFaulty")
+                    .attr("style", "width: " + (columnInfo[i].faultyCount / cellInfo.length) * 100 + "%;");
+            }*/
+
             $('.dc-table-head').each(function (index, Element) {
                 d3.select(Element).append("span")
                     .attr("class", "columnDatatype")
@@ -710,6 +741,31 @@ function createDataTable() {
                 d3.select(Element).append("div")
                     .attr("class", "columnInfo")
                     .attr("onclick", "javascript:showColumnStatistics(" + index + ")");
+                var columnComposition = d3.select(Element).append("div")
+                    .attr("class", "columnComposition");
+
+                var validCount = cellInfo.length - columnInfo[index].emptyCount - columnInfo[index].faultyCount;
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionValid")
+                    .attr("style", "width: " + (validCount / cellInfo.length) * 100 + "%;")
+                    .attr("data-toggle", "tooltip")
+                    .attr("title", "valid: " + validCount);
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionEmpty")
+                    .attr("style", "width: " + (columnInfo[index].emptyCount / cellInfo.length) * 100 + "%;")
+                    .attr("data-toggle", "tooltip")
+                    .attr("title", "empty: " + columnInfo[index].emptyCount);
+                columnComposition.append("div")
+                    .attr("class", "columnCompositionFaulty")
+                    .attr("style", "width: " + (columnInfo[index].faultyCount / cellInfo.length) * 100 + "%;")
+                    .attr("data-toggle", "tooltip")
+                    .attr("title", "faulty: " + columnInfo[index].faultyCount);
+            });
+
+            $('[data-toggle="tooltip"]').tooltip({
+                animated : 'fade',
+                placement : 'bottom',
+                container: 'body'
             });
         });
 }

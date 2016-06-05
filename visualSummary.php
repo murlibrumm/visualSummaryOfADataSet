@@ -19,11 +19,13 @@ $debug = false;
 $target_dir = "uploads/";
 $target_file = $target_dir . basename($_FILES["fileToUpload"]["name"]);
 $uploadOk = 2;
-$imageFileType = pathinfo($target_file, PATHINFO_EXTENSION);
+$fileType = pathinfo($target_file, PATHINFO_EXTENSION);
 
 if ($debug) {
-    echo("files dump: " . var_dump($_FILES) . "<br />");
-    echo("imgFileType: " . $imageFileType . "<br />");
+    echo("files dump: ");
+	var_dump($_FILES);
+	echo("<br />");
+    echo("fileType: " . $fileType . "<br />");
     echo("targetFile: " . $target_file . "<br />");
 }
 
@@ -33,13 +35,13 @@ if (file_exists($target_file)) {
     // echo "Sorry, file already exists.";
     $uploadOk = 1;
 }
-// Check file size, max 500KB
-if ($_FILES["fileToUpload"]["size"] > 500000) {
+// Check file size, max 20MB
+if ($_FILES["fileToUpload"]["size"] > 20000000) {
     echo "Sorry, your file is too large.";
     $uploadOk = 0;
 }
 // Allow certain file formats
-if ($imageFileType != "csv") {
+if ($fileType != "csv") {
     echo "Sorry, only csv-files are allowed.";
     $uploadOk = 0;
 }
@@ -142,6 +144,7 @@ if ($uploadOk == 0) {
 <script type="text/javascript" src="js/underscore-min.js"></script>
 <script type="text/javascript" src="js/jquery-1.12.3.js"></script>
 <script type="text/javascript" src="js/jquery.doubleScroll.js"></script>
+<script type="text/javascript" src="js/tooltip.js"></script>
 <script type="text/javascript" src="js/visualSummaryClasses.js"></script>
 <script type="text/javascript" src="js/visualSummaryLogic.js"></script>
 </body>

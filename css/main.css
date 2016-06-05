@@ -36,10 +36,14 @@ a {
 
 
 
+
+
 /* histograms */
 #histograms {
     margin-top: 15px;
 }
+
+
 
 
 
@@ -71,6 +75,8 @@ a {
     border-radius: 10px;
     border-width: 3px;
 }
+
+
 
 
 
@@ -110,6 +116,8 @@ a {
     top: 10px;
     right: 10px;
 }
+
+
 
 
 
@@ -174,26 +182,56 @@ td.correlationBody {
 
 
 
+
+
 /* css for the infosection from the table */
+#data-table .dc-table-head {
+    position: relative;
+    padding: 0px !important;
+}
+
+.dc-table-head .columnName {
+    padding: 8px;
+}
+
+.hrTable {
+    margin: 5px 8px;
+}
+
 .dc-table-head .columnDatatype {
+    padding: 8px 36px 8px 8px;
     font-family: Courier New;
     float: left;
 }
 
 .dc-table-head .columnInfo {
+    position: absolute;
+    bottom: 18px;
+    right: 8px;
     background-image: url("../img/info.png");
-    float: right;
     width: 23px;
     height: 23px;
 }
 
-
-
-
-.hrTable {
-    margin: 5px 0px;
+.dcTableHeadComposition {
+    padding: 0px !important;
 }
 
+.columnComposition {
+    height: 10px;
+    width: 100%;
+}
+
+.columnCompositionValid, .columnCompositionEmpty, .columnCompositionFaulty {
+    height: 10px;
+    float: left;
+}
+
+
+
+
+
+/* style for the background of the table-cells */
 .dc-table-column {
     padding: 0px !important;
 }
@@ -206,17 +244,23 @@ td.correlationBody {
 
 
 
+
+
 /* css for the empty, faulty, outlier-values from the table & for the legend */
-.emptyValue, .tableLegendEmpty .coloredLegend {
-    background-color: #cdd7fa;
+.emptyValue, .tableLegendEmpty .coloredLegend, .columnCompositionEmpty {
+    background-color: #8491E3;
 }
 
-.faultyValue, .tableLegendFaulty .coloredLegend {
-    background-color: #fad9cd;
+.faultyValue, .tableLegendFaulty .coloredLegend, .columnCompositionFaulty {
+    background-color: #FA8995;
 }
 
 .outlierValue, .tableLegendOutlier .coloredLegend {
-    background-color: #cdfad0;
+    background-color: #E3C771;
+}
+
+.columnCompositionValid {
+    background-color: #7DFD9C;
 }
 
 
@@ -238,6 +282,7 @@ td.correlationBody {
 .tableLegendBoolean .coloredLegend {
     background-color: #8C6F33;
 }
+
 
 
 
@@ -273,7 +318,9 @@ td.correlationBody {
 
 
 
-/* correlation-matrix-link at the left of the legend */
+
+
+/* correlation-matrix-link at the left of the table-legend */
 .showCorrelationMatrix {
     float: left;
     padding-top: 25px;
