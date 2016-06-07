@@ -6,6 +6,7 @@
     <title>Visual Summary of a Data Set</title>
     <meta charset="UTF-8">
     <link rel="stylesheet" type="text/css" href="css/dc.css">
+    <link rel="stylesheet" type="text/css" href="css/d3.tip.css">
     <link rel="stylesheet" type="text/css" href="css/bootstrap.css">
     <link rel="stylesheet" type="text/css" href="css/main.css">
 </head>
@@ -139,6 +140,7 @@ if ($uploadOk == 0) {
 
 
 <script type="text/javascript" src="js/d3.js"></script>
+<script type="text/javascript" src="js/d3.tip.js"></script>
 <script type="text/javascript" src="js/crossfilter.js"></script>
 <script type="text/javascript" src="js/dc.js"></script>
 <script type="text/javascript" src="js/underscore-min.js"></script>

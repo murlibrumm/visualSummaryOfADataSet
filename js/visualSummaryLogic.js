@@ -625,7 +625,54 @@ function createHistogramPlot (index) {
         .renderHorizontalGridLines(true)
         .xAxisLabel(columnInfo[index].name)
         .yAxisLabel('count')
-        .brushOn(true);
+        .brushOn(true)
+        // use renderlet to "escape" to d3, see: http://dc-js.github.io/dc.js/examples/bar-extra-line.html
+        .on('renderlet', function(chart) {
+            // we don't want the renderlet to be active everytime a selection is resetted
+            // if there was no "Reset All" button, renderlet could be removed at the end of the renderlet => chart.on('renderlet', null);
+            // so we have to check, if the "extra" elements still exist, and redraw them if necessary
+            if ( ! chart.select('.extra').empty() ) {
+                return;
+            }
+
+            // only draw stuff if it is a int or double histogram
+            if (columnInfo[index].datatype == "int" || columnInfo[index].datatype == "double") {
+                var colorMedian = "#53d900";
+                var colorQuartiles = "#92d966";
+                var colorOutlierLine = "#bbb";
+                var colorOutlierRect = "#eee";
+                drawHistogramLine(chart, columnInfo[index].secondQuartile, colorMedian);
+                drawHistogramLine(chart, columnInfo[index].firstQuartile,  colorQuartiles);
+                drawHistogramLine(chart, columnInfo[index].thirdQuartile,  colorQuartiles);
+
+                var outlierLeftThreshold  = columnInfo[index].firstQuartile - ( 1.5 * columnInfo[index].iqr );
+                var outlierRightThreshold = columnInfo[index].thirdQuartile + ( 1.5 * columnInfo[index].iqr );
+                drawHistogramLine(chart, outlierLeftThreshold,  colorOutlierLine);
+                drawHistogramLine(chart, outlierRightThreshold, colorOutlierLine);
+
+                var height = chart.y().range()[0] - chart.y().range()[1];
+                drawHistogramRect(chart, {'x': 0, 'y': 0},
+                    chart.x()(outlierLeftThreshold), height, colorOutlierRect);
+                drawHistogramRect(chart, {'x': chart.x()(outlierRightThreshold), 'y': 0},
+                    chart.x().range()[1] - chart.x()(outlierRightThreshold), height, colorOutlierRect);
+            }
+
+            if (columnInfo[index].datatype == "string") {
+                /* Initialize tooltip */
+                var tip = d3.tip().attr('class', 'd3-tip')
+                    .offset([-10, 0])
+                    .html(function(d) { return d.x; });
+
+                console.log(d3.select(chart));
+                console.log(chart);
+                /* Invoke the tip in the context of your visualization */
+                chart.selectAll('rect').call(tip);
+
+                chart.selectAll('rect')
+                    .on('mouseover', tip.show)
+                    .on('mouseout', tip.hide);
+            }
+        });
 
     if (roundFunction !== null) {
         histogramCharts[index].round(roundFunction)
@@ -646,6 +693,48 @@ function createHistogramPlot (index) {
     var yAxisHistogramChart = histogramCharts[index].yAxis();
     yAxisHistogramChart.ticks(6).tickFormat(d3.format("d")).tickSubdivide(0); // tickSubdivide(0) should remove sub ticks but not
 }
+
+
+
+/**
+ *
+ * @param chart
+ * @param xCoord
+ */
+function drawHistogramLine(chart, xCoord, color) {
+    var extra_data = [{x: chart.x()( xCoord ), y: chart.y().range()[0]},
+                      {x: chart.x()( xCoord ), y: chart.y().range()[1]}];
+    var line = d3.svg.line()
+        .x(function(d) { return d.x; })
+        .y(function(d) { return d.y; })
+        .interpolate('linear');
+    // insert as last-child, so that the line is infront of the barchart
+    var path = chart.select('g.chart-body').append('path').attr('class', 'extra').attr('stroke', color).attr('stroke-width', '3').data([extra_data]);
+    path.attr('d', line);
+}
+
+
+
+/**
+ *
+ * @param chart
+ * @param p
+ * @param width
+ * @param height
+ */
+function drawHistogramRect(chart, p, width, height, color) {
+    // Draw the Rectangle, only if width > 0
+    if ( width > 0 ) {
+        // insert as first-child, so that the rectangle is behind the barchart
+        chart.select('g.chart-body').insert("rect", ":first-child")
+            .attr("x", p['x'])
+            .attr("y", p['y'])
+            .attr("width",  width)
+            .attr("height", height)
+            .attr("fill", color);
+    }
+}
+
 
 
 /**
