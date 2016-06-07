@@ -630,13 +630,15 @@ function createHistogramPlot (index) {
         .on('renderlet', function(chart) {
             // we don't want the renderlet to be active everytime a selection is resetted
             // if there was no "Reset All" button, renderlet could be removed at the end of the renderlet => chart.on('renderlet', null);
-            // so we have to check, if the "extra" elements still exist, and redraw them if necessary
-            if ( ! chart.select('.extra').empty() ) {
+            // so we have to check, if the custom classname we set (renderletAdded) still exists, and redraw tooltip & lines only if necessary
+            if ( ! chart.select('.renderletAdded').empty() ) {
                 return;
             }
 
             // only draw stuff if it is a int or double histogram
             if (columnInfo[index].datatype == "int" || columnInfo[index].datatype == "double") {
+                chart.select('g.chart-body').classed("renderletAdded", true);
+
                 var colorMedian = "#53d900";
                 var colorQuartiles = "#92d966";
                 var colorOutlierLine = "#bbb";
@@ -658,14 +660,14 @@ function createHistogramPlot (index) {
             }
 
             if (columnInfo[index].datatype == "string") {
-                /* Initialize tooltip */
+                chart.select('g.chart-body').classed("renderletAdded", true);
+
+                // Initialize tooltip
                 var tip = d3.tip().attr('class', 'd3-tip')
                     .offset([-10, 0])
                     .html(function(d) { return d.x; });
 
-                console.log(d3.select(chart));
-                console.log(chart);
-                /* Invoke the tip in the context of your visualization */
+                // Invoke the tip in the context of this histogram
                 chart.selectAll('rect').call(tip);
 
                 chart.selectAll('rect')
@@ -697,9 +699,10 @@ function createHistogramPlot (index) {
 
 
 /**
- *
- * @param chart
- * @param xCoord
+ * adds a vertical line at the position [xCoord] to the [chart], with color: [color]
+ * @param {object} chart
+ * @param {number} xCoord
+ * @param {string} color
  */
 function drawHistogramLine(chart, xCoord, color) {
     var extra_data = [{x: chart.x()( xCoord ), y: chart.y().range()[0]},
@@ -716,11 +719,12 @@ function drawHistogramLine(chart, xCoord, color) {
 
 
 /**
- *
- * @param chart
- * @param p
- * @param width
- * @param height
+ * adds a rect from the starting point [p] to the [chart], with width: [width], height: [height], color: [color]
+ * @param {object} chart
+ * @param {array} p
+ * @param {number} width
+ * @param {number} height
+ * @param {string} color
  */
 function drawHistogramRect(chart, p, width, height, color) {
     // Draw the Rectangle, only if width > 0
