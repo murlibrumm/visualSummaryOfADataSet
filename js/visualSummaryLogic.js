@@ -306,10 +306,7 @@ function createDataCountWidget() {
         .group(ndx.groupAll());
 
     // register handlers
-    d3.selectAll('a#all').on('click', function () {
-        dc.filterAll();
-        dc.renderAll();
-    });
+    d3.selectAll('a#all').on('click', resetCharts());
 }
 
 
@@ -494,8 +491,9 @@ function createHistogramPlot (index) {
     // documentation: https://github.com/mbostock/d3/wiki/Selections
     var chartDivId = "chart" + index + "-histogram";
 
+    // add a new row, if  we added more than 4 elements (4 elements per row)
     if (elemsInHistogramRow >= 4) {
-        var rowDiv = d3.select("#histograms").append("div")
+        d3.select("#histograms").append("div")
             .attr("class", "row");
         elemsInHistogramRow = 0;
     }
@@ -509,7 +507,7 @@ function createHistogramPlot (index) {
         .attr("class", "dc-chart");
     var resetContainer = chartDiv.append("span")
         .attr("class", "resetContainer");
-    var aTag = resetContainer.append("a")
+    resetContainer.append("a")
         .attr("class", "reset")
         .attr("href", "#")
         .attr("onclick", "histogramCharts[" + index + "].filterAll();dc.redrawAll();")
@@ -721,7 +719,7 @@ function drawHistogramLine(chart, xCoord, color) {
 /**
  * adds a rect from the starting point [p] to the [chart], with width: [width], height: [height], color: [color]
  * @param {object} chart
- * @param {array} p
+ * @param {object} p
  * @param {number} width
  * @param {number} height
  * @param {string} color
@@ -758,7 +756,8 @@ function createDataTable() {
             label: "<div class='columnName'>" + columnInfo[i].name + "</div><hr class='hrTable' />",
             format: (function(i){ return function(d) {
                 var cssClasses =
-                    ((d[i].isFaulty) ? "faultyValue" : "") +
+                    "cellId" + d[i].cellId +
+                    ((d[i].isFaulty) ? " faultyValue" : "") +
                     ((d[i].isEmpty) ? " emptyValue" : "") +
                     ((d[i].isOutlier) ? " outlierValue" : "");
                 if (cssClasses != "") {
@@ -787,54 +786,21 @@ function createDataTable() {
             // each time table is rendered remove nasty extra row dc.js insists on adding
             table.select('tr.dc-table-group').remove();
 
-            /* change the header
-             var thElements = $('#data-table').children('th');
-             for (var i = 0; i < thElements.length; i++) {
-             thElements[i].firstChild.nodeValue = columnInfo[i].name;
-             }*/
-
             // on renderlet formatting of the table: http://stackoverflow.com/questions/26657621/dc-js-datatable-custom-formatting => outliers, missing values etc
             // maybe also relevant: http://bl.ocks.org/jun9/raw/5631952/, http://stackoverflow.com/questions/25083383/custom-text-filter-for-dc-js-datatable
 
-            // add info-button to the header
 
-            /*var newHeaderRow = d3.select('#data-table').select('thead').append("tr");
-            for (var i = 0; i < columnInfo.length; i++) {
-                var infoTh = newHeaderRow.append("th")
-                    .attr("class", "dc-table-head");
-                infoTh.append("span")
-                    .attr("class", "columnDatatype")
-                    .html(columnInfo[i].datatype);
-                infoTh.append("div")
-                    .attr("class", "columnInfo")
-                    .attr("onclick", "javascript:showColumnStatistics(" + i + ")");
-            }
-
-            var newHeaderRow = d3.select('#data-table').select('thead').append("tr");
-            for (var i = 0; i < columnInfo.length; i++) {
-                var infoTh = newHeaderRow.append("th")
-                    .attr("class", "dc-table-head dcTableHeadComposition");
-                var columnComposition = infoTh.append("div")
-                    .attr("class", "columnComposition");
-                columnComposition.append("div")
-                    .attr("class", "columnCompositionValid")
-                    .attr("style", "width: " + ((cellInfo.length - columnInfo[i].emptyCount - columnInfo[i].faultyCount) / cellInfo.length) * 100 + "%;");
-                columnComposition.append("div")
-                    .attr("class", "columnCompositionEmpty")
-                    .attr("style", "width: " + (columnInfo[i].emptyCount / cellInfo.length) * 100 + "%;");
-                columnComposition.append("div")
-                    .attr("class", "columnCompositionFaulty")
-                    .attr("style", "width: " + (columnInfo[i].faultyCount / cellInfo.length) * 100 + "%;");
-            }*/
-
-            $('.dc-table-head').each(function (index, Element) {
-                d3.select(Element).append("span")
+            $('.dc-table-head').each(function (index, element) {
+                // 1) add info-button + datatype to the header
+                d3.select(element).append("span")
                     .attr("class", "columnDatatype")
                     .html(columnInfo[index].datatype);
-                d3.select(Element).append("div")
+                d3.select(element).append("div")
                     .attr("class", "columnInfo")
                     .attr("onclick", "javascript:showColumnStatistics(" + index + ")");
-                var columnComposition = d3.select(Element).append("div")
+
+                // 2) add "composition-bar" to the header
+                var columnComposition = d3.select(element).append("div")
                     .attr("class", "columnComposition");
 
                 var validCount = cellInfo.length - columnInfo[index].emptyCount - columnInfo[index].faultyCount;
@@ -855,10 +821,43 @@ function createDataTable() {
                     .attr("title", "faulty: " + columnInfo[index].faultyCount);
             });
 
+            // add a tooltip to the "composition-bar"
             $('[data-toggle="tooltip"]').tooltip({
                 animated : 'fade',
                 placement : 'bottom',
                 container: 'body'
+            });
+
+
+            // add an extra column to the table, for manual filtering of rows
+            // 1) add a cell to the header with the controls
+            var controlCell = d3.select('#data-table thead tr').insert("th", ":first-child")
+                .attr("class", "dc-table-head tableHeadFilter");
+            var innerDiv = controlCell.append("div")
+                .attr("class", "columnName");
+
+            innerDiv.append("a")
+                .attr("href", "javascript: filterAllCharsAndTable();")
+                .attr("class", "filterLink")
+                .html("filter rows!");
+            innerDiv.append("br");
+            innerDiv.append("a")
+                .attr("href", "javascript: resetCharts();")
+                .attr("class", "filterLink")
+                .html("reset all!");
+
+            // 2) add a cell to each row with a checkbox
+            $('.dc-table-row').each(function (index, element) {
+                // get the id from the first column of the row
+                var cellId = element.firstChild.firstChild.className.substring(6);
+                // add a checkbox in the new first column
+                var tdElement = d3.select(element).insert("td", ":first-child")
+                    .attr("class", "dc-table-column")
+                    .attr("align", "center");
+                tdElement.append("div").append("input")
+                    .attr("type", "checkbox")
+                    .attr("class", "filterRowsCheckbox")
+                    .attr("value", cellId);
             });
         });
 }
@@ -879,7 +878,7 @@ function deleteRow(array, row) {
 
 
 /**
- * selects a column [index] from an array [array], and returns it
+ * selects a column [index] from an array [array], and returns an array
  * @param {Array} array
  * @param {number} index
  * @returns {Array}
@@ -893,7 +892,7 @@ function getColumnFromArray (array, index) {
 }
 
 /**
- * selects a column [index] from an array [array], and returns it
+ * selects all [property]s from an object of a column [index] from an array [array], and returns them as an array
  * @param {Array} array
  * @param {number} index
  * @param {string} property
@@ -948,4 +947,38 @@ function showCorrelationMatrix () {
 function closeCorrelationMatrix () {
     var correlationDiv = $("#correlationDiv")[0];
     correlationDiv.style.display = "none";
+}
+
+function resetCharts() {
+    dc.filterAll();
+    dc.renderAll();
+}
+
+/**
+ * manual filtering:
+ * only show rows with corresponding checked checkboxes
+ */
+function filterAllCharsAndTable() {
+    // create array of ids of cells, which should still be visible
+    // to do this, iterate over all checkboxes from the first column of the table
+    var filterValues = [];
+    $(".filterRowsCheckbox").each(function (index, element) {
+        console.log(element.checked);
+        console.log(element);
+        if(element.checked) {
+            // + before the value to change the type to number
+            filterValues.push(+element.value);
+        }
+    });
+    // don't filter if there aren't any checkboxes checked
+    if (filterValues.length == 0) {
+        return;
+    }
+
+    // show only rows where the first column id exists in the filterValues-array
+    allDim.filter(function(d){
+        return filterValues.indexOf(d[0].cellId) > -1;
+    });
+
+    dc.redrawAll();
 }

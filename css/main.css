@@ -194,8 +194,17 @@ td.correlationBody {
     padding: 8px;
 }
 
+.tableHeadFilter {
+    vertical-align: middle !important;
+}
+
+.dc-table-head .filterLink {
+    white-space: nowrap;
+    line-height: 2.5em;
+}
+
 .hrTable {
-    margin: 5px 8px;
+    margin: 2px 8px;
 }
 
 .dc-table-head .columnDatatype {

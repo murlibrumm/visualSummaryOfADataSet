@@ -1,4 +1,7 @@
 // tutorial on object-oriented-JS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
+
+var cellId = 0;
+
 /**
  * class CellInfo
  * the constructor checks the type of [cellValue] via regexp, and sets boolean values (isInt, isDouble, etc.)
@@ -13,6 +16,7 @@ function CellInfo (cellValue) {
     this.isBoolean = false;
     this.isString = false;
     this.isOutlier = false;
+    this.cellId = cellId++;
 
     if (this.cellValue === "" || this.cellValue === "-") {
         this.isEmpty = true;
