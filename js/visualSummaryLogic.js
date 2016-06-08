@@ -108,8 +108,8 @@ $().ready(function () {
 
     // initialize the histogramColorArray
     histogramColors["int"]     = "#8C3365";
-    histogramColors["double"]  = "#33558C";
-    histogramColors["string"]  = "#388C32";
+    histogramColors["double"]  = "#388C32";
+    histogramColors["string"]  = "#33558C";
     histogramColors["boolean"] = "#8C6F33";
 
     // parse each row from the csv-file
@@ -633,22 +633,22 @@ function createHistogramPlot (index) {
                 return;
             }
 
-            // only draw stuff if it is a int or double histogram
+            // only draw stuff if it is a int- or double-histogram
             if (columnInfo[index].datatype == "int" || columnInfo[index].datatype == "double") {
                 chart.select('g.chart-body').classed("renderletAdded", true);
 
-                var colorMedian = "#53d900";
-                var colorQuartiles = "#92d966";
+                var colorMedian = "#000";
+                var colorQuartiles = "#000";
                 var colorOutlierLine = "#bbb";
                 var colorOutlierRect = "#eee";
-                drawHistogramLine(chart, columnInfo[index].secondQuartile, colorMedian);
-                drawHistogramLine(chart, columnInfo[index].firstQuartile,  colorQuartiles);
-                drawHistogramLine(chart, columnInfo[index].thirdQuartile,  colorQuartiles);
+                drawHistogramLine(chart, columnInfo[index].secondQuartile, colorMedian, 2);
+                drawHistogramLine(chart, columnInfo[index].firstQuartile,  colorQuartiles, 2);
+                drawHistogramLine(chart, columnInfo[index].thirdQuartile,  colorQuartiles, 2);
 
                 var outlierLeftThreshold  = columnInfo[index].firstQuartile - ( 1.5 * columnInfo[index].iqr );
                 var outlierRightThreshold = columnInfo[index].thirdQuartile + ( 1.5 * columnInfo[index].iqr );
-                drawHistogramLine(chart, outlierLeftThreshold,  colorOutlierLine);
-                drawHistogramLine(chart, outlierRightThreshold, colorOutlierLine);
+                drawHistogramLine(chart, outlierLeftThreshold,  colorOutlierLine, 1);
+                drawHistogramLine(chart, outlierRightThreshold, colorOutlierLine, 1);
 
                 var height = chart.y().range()[0] - chart.y().range()[1];
                 drawHistogramRect(chart, {'x': 0, 'y': 0},
@@ -657,6 +657,7 @@ function createHistogramPlot (index) {
                     chart.x().range()[1] - chart.x()(outlierRightThreshold), height, colorOutlierRect);
             }
 
+            // in case of a string-histogram add tooltips
             if (columnInfo[index].datatype == "string") {
                 chart.select('g.chart-body').classed("renderletAdded", true);
 
@@ -702,7 +703,7 @@ function createHistogramPlot (index) {
  * @param {number} xCoord
  * @param {string} color
  */
-function drawHistogramLine(chart, xCoord, color) {
+function drawHistogramLine(chart, xCoord, color, width) {
     var extra_data = [{x: chart.x()( xCoord ), y: chart.y().range()[0]},
                       {x: chart.x()( xCoord ), y: chart.y().range()[1]}];
     var line = d3.svg.line()
@@ -710,7 +711,7 @@ function drawHistogramLine(chart, xCoord, color) {
         .y(function(d) { return d.y; })
         .interpolate('linear');
     // insert as last-child, so that the line is infront of the barchart
-    var path = chart.select('g.chart-body').append('path').attr('class', 'extra').attr('stroke', color).attr('stroke-width', '3').data([extra_data]);
+    var path = chart.select('g.chart-body').append('path').attr('class', 'extra').attr('stroke', color).attr('stroke-width', width).data([extra_data]);
     path.attr('d', line);
 }
 
@@ -852,7 +853,7 @@ function createDataTable() {
                 var cellId = element.firstChild.firstChild.className.substring(6);
                 // add a checkbox in the new first column
                 var tdElement = d3.select(element).insert("td", ":first-child")
-                    .attr("class", "dc-table-column")
+                    .attr("class", "dc-table-column filterColumn")
                     .attr("align", "center");
                 tdElement.append("div").append("input")
                     .attr("type", "checkbox")
@@ -949,6 +950,9 @@ function closeCorrelationMatrix () {
     correlationDiv.style.display = "none";
 }
 
+/**
+ * reset all filters & render everything
+ */
 function resetCharts() {
     dc.filterAll();
     dc.renderAll();
@@ -976,6 +980,7 @@ function filterAllCharsAndTable() {
     }
 
     // show only rows where the first column id exists in the filterValues-array
+    // documentation: https://github.com/square/crossfilter/wiki/API-Reference#dimension_filter
     allDim.filter(function(d){
         return filterValues.indexOf(d[0].cellId) > -1;
     });

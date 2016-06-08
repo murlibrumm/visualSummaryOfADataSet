@@ -196,6 +196,7 @@ td.correlationBody {
 
 .tableHeadFilter {
     vertical-align: middle !important;
+    width: 90px;
 }
 
 .dc-table-head .filterLink {
@@ -203,6 +204,7 @@ td.correlationBody {
     line-height: 2.5em;
 }
 
+/* css for the infosection from the table */
 .hrTable {
     margin: 2px 8px;
 }
@@ -251,6 +253,14 @@ td.correlationBody {
     width: 100%;
 }
 
+#data-table input[type="checkbox"] {
+    margin: 0px;
+}
+
+#data-table .filterColumn div {
+    align-items: center;
+}
+
 
 
 
@@ -281,11 +291,11 @@ td.correlationBody {
 }
 
 .tableLegendDouble .coloredLegend {
-    background-color: #33558C;
+    background-color: #388C32;
 }
 
 .tableLegendString .coloredLegend {
-    background-color: #388C32;
+    background-color: #33558C;
 }
 
 .tableLegendBoolean .coloredLegend {
