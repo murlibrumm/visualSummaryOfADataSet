@@ -173,7 +173,6 @@ function parseCSVData() {
         const numberOfNonEmptyCells = numberOfRows - columnInfo[i].emptyCount;
         const datatypeTreshold = numberOfNonEmptyCells * 0.8;
         const datatypeTresholdBoolean = numberOfNonEmptyCells * 0.9;
-        // TODO numbers fiddling
 
         if (columnInfo[i].intCount >= datatypeTreshold) {
             if (columnInfo[i].doubleCount >= numberOfNonEmptyCells * 0.1) {
@@ -203,7 +202,6 @@ function parseCSVData() {
                         columnInfo[i].datatype === "double") {
                         cellInfo[m][i].cellValue = +cellInfo[m][i].cellValue;
                     } else { // boolean
-                        // TODO maybe state, that the value was changed (0 => false), and visualize it in the table?
                         if (cellInfo[m][i].cellValue === "0" || cellInfo[m][i].cellValue.trim() === "false") {
                             cellInfo[m][i].cellValue = false;
                         } else if (cellInfo[m][i].cellValue === "1" || cellInfo[m][i].cellValue.trim() === "true") {
@@ -284,12 +282,12 @@ function histogramMakesSense(index) {
     // don't plot histogram if:
     // 1) the row contains only faulty and empty values (valid for all datatypes)
     // 2) the row has only one unique value (valid for all datatypes)
-    if (columnInfo[index].emptyCount + columnInfo[index].faultyCount == cellInfo.length ||
+    if (columnInfo[index].validCount == 0 ||
         columnInfo[index].uniqueValuesCount == 1) {
         return false;
     }
     // 3) the row has only unique values (valid for string only)
-    if (columnInfo[index].datatype == "string" && columnInfo[index].uniqueValuesCount == cellInfo.length) {
+    if (columnInfo[index].datatype == "string" && columnInfo[index].uniqueValuesCount == columnInfo[index].validCount) {
         return false;
     }
     return true;
@@ -444,6 +442,8 @@ function setFaultyFlag(index) {
             }
         }
     }
+
+    columnInfo[index].validCount = cellInfo.length - columnInfo[index].faultyCount - columnInfo[index].emptyCount;
 }
 
 
@@ -533,22 +533,44 @@ function createHistogramPlot (index) {
     // check datatype of column, react accordingly
     if (columnInfo[index].datatype === "int" || columnInfo[index].datatype === "double") { // int or double
 
-        // get the minimum and maximum value from the column
-        // get the bin width (max - min) / 10
-        // add half a bin to the lower and upper end
-        // in the end, we have 11 bins
+        // Freedman & Diaconis bin-width
+        var histogramBinWidth = (2 * columnInfo[index].iqr) / (Math.pow(columnInfo[index].validCount, 1/3));
 
-        // TODO Freedman Diaconis bin-width
+        var numberOfBars, histogramRange;
 
-        var histogramBinWidth = (columnInfo[index].max - columnInfo[index].min) / 10;
-        if (columnInfo[index].datatype == "int") {
-            histogramBinWidth = Math.round(histogramBinWidth);
+        if (columnInfo[index].datatype === "int") { // int, ranges start at floating-point-numbers with 0.5
+            if ((columnInfo[index].max - columnInfo[index].min) <= 10) { // if the max-min-diff is lte 10, the bin-width is 1
+                histogramBinWidth = 1;
+                histogramRange = [columnInfo[index].min - 0.5, columnInfo[index].max + 0.5];
+                // numberOfBars = histogramRange[1] - histogramRange[0];
+
+            } else { // if the max-min-diff is gt 10, the bin-width is calculated
+                var minimumMinMaxDiff = columnInfo[index].max + 1 - columnInfo[index].min;
+
+                histogramBinWidth = Math.round(histogramBinWidth);
+                // round the number of bars (round upwards)
+                numberOfBars =  Math.ceil(minimumMinMaxDiff / histogramBinWidth);
+
+                // calculate range
+                var differenceBinWidthMinMax = (numberOfBars * histogramBinWidth) - minimumMinMaxDiff;
+                var startPoint = columnInfo[index].min - 0.5 - (differenceBinWidthMinMax / 2);
+                var endPoint = columnInfo[index].max + 0.5 + (differenceBinWidthMinMax / 2);
+
+                // if the startPoint is a decimal number, the endPoint is also a decimal number, increase both by 0.5
+                if (startPoint % 1 != 0) {
+                    startPoint += 0.5;
+                    endPoint += 0.5;
+                }
+                histogramRange = [startPoint, endPoint];
+            }
+
+        } else { // double
+            // round the number of bars (round upwards)
+            numberOfBars =  Math.ceil((columnInfo[index].max - columnInfo[index].min) / histogramBinWidth);
+            histogramBinWidth = (columnInfo[index].max - columnInfo[index].min) / numberOfBars;
+            histogramRange = [columnInfo[index].min, columnInfo[index].max];
         }
 
-        var histogramRange = [columnInfo[index].min - histogramBinWidth/2, columnInfo[index].max + histogramBinWidth/2];
-        /*console.log("low: " + histogramRange[0]);
-         console.log("high: " + histogramRange[1]);
-         console.log("width: " + histogramBinWidth);*/
 
         // dimension = x-axis values => ranges
         histogramDimension = ndx.dimension(function(d) {
@@ -556,7 +578,12 @@ function createHistogramPlot (index) {
                 return -Infinity;
             } else {
                 // rounds all the values to the low-threshold of the bin they fit in
-                return histogramRange[0] + (Math.floor((d[index].cellValue - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
+                // in case of the maximum-value of a double column, lower the value just a slight bit, so it fits into the last column
+                var value = d[index].cellValue;
+                if (columnInfo[index].datatype === "double" && d[index].cellValue == histogramRange[1]) {
+                    value -= (value - histogramRange[0]) / 1000;
+                }
+                return histogramRange[0] + (Math.floor((value - histogramRange[0]) / histogramBinWidth) * histogramBinWidth);
             }
         });
 
@@ -804,12 +831,11 @@ function createDataTable() {
                 var columnComposition = d3.select(element).append("div")
                     .attr("class", "columnComposition");
 
-                var validCount = cellInfo.length - columnInfo[index].emptyCount - columnInfo[index].faultyCount;
                 columnComposition.append("div")
                     .attr("class", "columnCompositionValid")
-                    .attr("style", "width: " + (validCount / cellInfo.length) * 100 + "%;")
+                    .attr("style", "width: " + (columnInfo[index].validCount / cellInfo.length) * 100 + "%;")
                     .attr("data-toggle", "tooltip")
-                    .attr("title", "valid: " + validCount);
+                    .attr("title", "valid: " + columnInfo[index].validCount);
                 columnComposition.append("div")
                     .attr("class", "columnCompositionEmpty")
                     .attr("style", "width: " + (columnInfo[index].emptyCount / cellInfo.length) * 100 + "%;")
@@ -967,8 +993,6 @@ function filterAllCharsAndTable() {
     // to do this, iterate over all checkboxes from the first column of the table
     var filterValues = [];
     $(".filterRowsCheckbox").each(function (index, element) {
-        console.log(element.checked);
-        console.log(element);
         if(element.checked) {
             // + before the value to change the type to number
             filterValues.push(+element.value);

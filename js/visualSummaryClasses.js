@@ -90,6 +90,7 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.stringCount = 0;
         this.emptyCount = 0;
         this.faultyCount = 0;
+        this.validCount = 0;
     } else { // columnInfo
         // console.log(arguments[0]);
         this.name = arguments[0].name;
@@ -99,6 +100,7 @@ function ColumnInfo ( /* name | columnInfo */) {
         this.stringCount = arguments[0].stringCount;
         this.emptyCount = arguments[0].emptyCount;
         this.faultyCount = arguments[0].faultyCount;
+        this.validCount = arguments[0].validCount;
         this.datatype = arguments[0].datatype;
     }
 }
