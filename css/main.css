@@ -210,7 +210,7 @@ td.correlationBody {
 }
 
 .dc-table-head .columnDatatype {
-    padding: 8px 36px 8px 8px;
+    padding: 8px 36px 18px 8px;
     font-family: Courier New;
     float: left;
 }
@@ -229,6 +229,8 @@ td.correlationBody {
 }
 
 .columnComposition {
+    position: absolute;
+    bottom: 0px;
     height: 10px;
     width: 100%;
 }
@@ -287,19 +289,19 @@ td.correlationBody {
 
 /* histogram-legend colors */
 .tableLegendInt .coloredLegend {
-    background-color: #8C3365;
+    background-color: #7fc97f;
 }
 
 .tableLegendDouble .coloredLegend {
-    background-color: #388C32;
+    background-color: #fdc086;
 }
 
 .tableLegendString .coloredLegend {
-    background-color: #33558C;
+    background-color: #beaed4;
 }
 
 .tableLegendBoolean .coloredLegend {
-    background-color: #8C6F33;
+    background-color: #ffff99;
 }
 
 

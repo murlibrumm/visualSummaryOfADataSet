@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!--suppress ALL -->
+
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
@@ -34,6 +34,8 @@ if ($debug) {
 // ========== CHECKS ==========
 if (file_exists($target_file)) {
     // echo "Sorry, file already exists.";
+    // $uploadOk = 0;
+    // we use the file, which was uploaded before
     $uploadOk = 1;
 }
 // Check file size, max 20MB
@@ -139,15 +141,23 @@ if ($uploadOk == 0) {
 
 
 
-<script type="text/javascript" src="js/d3.js"></script>
-<script type="text/javascript" src="js/d3.tip.js"></script>
-<script type="text/javascript" src="js/crossfilter.js"></script>
-<script type="text/javascript" src="js/dc.js"></script>
-<script type="text/javascript" src="js/underscore-min.js"></script>
-<script type="text/javascript" src="js/jquery-1.12.3.js"></script>
-<script type="text/javascript" src="js/jquery.doubleScroll.js"></script>
-<script type="text/javascript" src="js/tooltip.js"></script>
-<script type="text/javascript" src="js/visualSummaryClasses.js"></script>
-<script type="text/javascript" src="js/visualSummaryLogic.js"></script>
+<script type="text/javascript" src="js/libs/d3.js"></script>
+<script type="text/javascript" src="js/libs/d3.tip.js"></script>
+<script type="text/javascript" src="js/libs/crossfilter.js"></script>
+<script type="text/javascript" src="js/libs/dc.js"></script>
+<script type="text/javascript" src="js/libs/jquery-1.12.3.js"></script>
+<script type="text/javascript" src="js/libs/jquery.doubleScroll.js"></script>
+<script type="text/javascript" src="js/libs/tooltip.js"></script>
+
+<script type="text/javascript" src="js/classes/cellInfoClass.js"></script>
+<script type="text/javascript" src="js/classes/columnInfoClass.js"></script>
+
+<script type="text/javascript" src="js/arrayUtils.js"></script>
+<script type="text/javascript" src="js/init.js"></script>
+<script type="text/javascript" src="js/parseCsvData.js"></script>
+<script type="text/javascript" src="js/calculateStatistics.js"></script>
+<script type="text/javascript" src="js/createCharts.js"></script>
+<script type="text/javascript" src="js/onclickFunctions.js"></script>
+
 </body>
 </html>
