@@ -80,7 +80,7 @@ if ($uploadOk == 0) {
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-xs-9 dc-data-count" id="data-count">
+        <div class="col-xs-12 col-lg-9 dc-data-count" id="data-count">
             <h2>
                 <small>
                     <span class="filter-count"></span> selected out of <span class="total-count"></span> records |
@@ -88,23 +88,41 @@ if ($uploadOk == 0) {
                 </small>
             </h2>
         </div>
-        <div class="col-xs-3 tableLegend tableLegendHistogram">
-            <h4>Histogram legend:</h4>
-            <div class="tableLegendInt tableLegendInner">
-                <div class="coloredLegend"></div>
-                <span class="legendText">Integer-column</span>
+        <div class="col-xs-12 col-lg-3 tableLegend tableLegendHistogram">
+            <div class="row">
+                <div class="col-xs-12">
+                    <h4>Histogram legend:</h4>
+                </div>
             </div>
-            <div class="tableLegendDouble tableLegendInner">
-                <div class="coloredLegend"></div>
-                <span class="legendText">Double-column</span>
-            </div>
-            <div class="tableLegendString tableLegendInner">
-                <div class="coloredLegend"></div>
-                <span class="legendText">String-column</span>
-            </div>
-            <div class="tableLegendBoolean tableLegendInner">
-                <div class="coloredLegend"></div>
-                <span class="legendText">Boolean-column</span>
+            <div class="row">
+                <div class="col-lg-5 col-lg-offset-0 col-md-2 col-md-offset-8 col-xs-3 col-xs-offset-6">
+                    <div class="tableLegendQuartile tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">Quartiles</span>
+                    </div>
+                    <div class="tableLegendOutlierRange tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">Outlier-area</span>
+                    </div>
+                </div>
+                <div class="col-lg-7 col-md-2 col-xs-3">
+                    <div class="tableLegendInt tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">Integer-column</span>
+                    </div>
+                    <div class="tableLegendDouble tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">Double-column</span>
+                    </div>
+                    <div class="tableLegendString tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">String-column</span>
+                    </div>
+                    <div class="tableLegendBoolean tableLegendInner">
+                        <div class="coloredLegend"></div>
+                        <span class="legendText">Boolean-column</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

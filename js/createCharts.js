@@ -89,7 +89,7 @@ function createDataCountWidget() {
  */
 function createHistogramPlot (index) {
     /* structure to create for each histogram:
-     <div class="col-xs-6 col-lg-3">
+     <div class="col-xs-6 col-md-4 col-lg-3">
          <div id="chartX-histogram">
              <span class="resetContainer">
                  <a class="reset" href="#" onclick="histogramCharts[X].filterAll();dc.redrawAll();" style="display: none;">reset</a>
@@ -101,15 +101,8 @@ function createHistogramPlot (index) {
     // documentation: https://github.com/mbostock/d3/wiki/Selections
     var chartDivId = "chart" + index + "-histogram";
 
-    // add a new row, if  we added more than 4 elements (4 elements per row)
-    if (elemsInHistogramRow >= 4) {
-        d3.select("#histograms").append("div")
-            .attr("class", "row");
-        elemsInHistogramRow = 0;
-    }
-
-    var columnDiv = d3.select("#histograms>div:last-child").append("div")
-        .attr("class", "col-xs-6 col-lg-3");
+    var columnDiv = d3.select("#histograms").append("div")
+        .attr("class", "col-xs-6 col-md-4 col-lg-3");
     elemsInHistogramRow++;
 
     var chartDiv = columnDiv.append("div")
@@ -292,10 +285,8 @@ function createHistogramPlot (index) {
                     chart.x()(outlierLeftThreshold), height, colorOutlierRect);
                 drawHistogramRect(chart, {'x': chart.x()(outlierRightThreshold), 'y': 0},
                     chart.x().range()[1] - chart.x()(outlierRightThreshold), height, colorOutlierRect);
-            }
 
-            // in case of a string-histogram add tooltips
-            if (columnInfo[index].datatype == "string") {
+            } else { // in case of a string- or a boolean-histogram add tooltips
                 chart.select('g.chart-body').classed("renderletAdded", true);
 
                 // Initialize tooltip

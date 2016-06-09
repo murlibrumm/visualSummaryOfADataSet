@@ -288,6 +288,16 @@ td.correlationBody {
 
 
 /* histogram-legend colors */
+.tableLegendQuartile .coloredLegend {
+    background-color: #000;
+    width: 2px;
+    margin: 0px 7px;
+}
+
+.tableLegendOutlierRange .coloredLegend {
+    background-color: #eee;
+}
+
 .tableLegendInt .coloredLegend {
     background-color: #7fc97f;
 }
@@ -319,13 +329,14 @@ td.correlationBody {
 }
 
 .coloredLegend {
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     float: right;
 }
 
 .legendText {
     padding-right: 5px;
+    font-size: 0.9em;
     float: right;
 }
 
