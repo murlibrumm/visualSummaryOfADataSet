@@ -306,7 +306,7 @@ function createDataCountWidget() {
         .group(ndx.groupAll());
 
     // register handlers
-    d3.selectAll('a#all').on('click', resetCharts());
+    d3.selectAll('a#all').attr('href', 'javascript:resetCharts()');
 }
 
 

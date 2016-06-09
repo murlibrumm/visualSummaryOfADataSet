@@ -1,5 +1,7 @@
 // tutorial on object-oriented-JS: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Introduction_to_Object-Oriented_JavaScript
 
+// every cell has a different id, this variable saves the id for the next cell.
+// it is incremented after a new cell was created.
 var cellId = 0;
 
 /**
