@@ -59,7 +59,7 @@ const divColumnStartTitle = "<div class='col-xs-12 col-stat-title'>";
 const divColumnStartKey = "<div class='col-xs-7 col-stat-key'>";
 const divColumnStartValue = "<div class='col-xs-5 col-stat-value'>";
 const divEnd ="</div>";
-const hrSeparator = "<hr class='hrTable' />";
+const hrSeparator = "<hr class='hrStatistics' />";
 
 /**
  * generates html statistics for the column

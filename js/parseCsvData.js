@@ -82,9 +82,10 @@ function parseCSVData() {
     }
     console.log(columnInfo);
 
-    // prepend is used for inserting content at the beginning of an element
     // substring from after the last slash until the end
-    $(".dc-data-count").children("h2").prepend(csvUrl.substring(csvUrl.lastIndexOf("/") + 1) + "; Rows: " + numberOfRows + ", Columns: " + numberOfColumns);
+    $(".dc-data-count .file-info-file").html(csvUrl.substring(csvUrl.lastIndexOf("/") + 1));
+    $(".dc-data-count .file-info-rows").html(numberOfRows);
+    $(".dc-data-count .file-info-columns").html(numberOfColumns);
 }
 
 /**

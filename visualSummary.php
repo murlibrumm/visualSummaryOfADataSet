@@ -80,22 +80,26 @@ if ($uploadOk == 0) {
 
 <div class="container-fluid">
     <div class="row">
-        <div class="col-xs-12 col-lg-9 dc-data-count" id="data-count">
-            <h2>
-                <small>
-                    <span class="filter-count"></span> selected out of <span class="total-count"></span> records |
-                    <a id="all" href="#">Reset All</a>
-                </small>
-            </h2>
+        <div class="col-xs-6 col-lg-9 dc-data-count" id="data-count">
+            <h3>
+                <span class="file-info-span">File: </span><span class="file-info-file"></span><br />
+                <span class="file-info-span">Rows: </span><span class="file-info-rows"></span><br />
+                <span class="file-info-span">Columns: </span><span class="file-info-columns"></span><br />
+            </h3>
+            <small>
+                <span class="filter-count"></span> selected out of <span class="total-count"></span> rows |
+                <a id="all" href="#">Reset All</a>
+            </small>
         </div>
-        <div class="col-xs-12 col-lg-3 tableLegend tableLegendHistogram">
+
+        <div class="col-xs-6 col-lg-3 tableLegend tableLegendHistogram">
             <div class="row">
                 <div class="col-xs-12">
                     <h4>Histogram legend:</h4>
                 </div>
             </div>
             <div class="row">
-                <div class="col-lg-5 col-lg-offset-0 col-md-2 col-md-offset-8 col-xs-3 col-xs-offset-6">
+                <div class="col-lg-12">
                     <div class="tableLegendQuartile tableLegendInner">
                         <div class="coloredLegend"></div>
                         <span class="legendText">Quartiles</span>
@@ -104,8 +108,6 @@ if ($uploadOk == 0) {
                         <div class="coloredLegend"></div>
                         <span class="legendText">Outlier-area</span>
                     </div>
-                </div>
-                <div class="col-lg-7 col-md-2 col-xs-3">
                     <div class="tableLegendInt tableLegendInner">
                         <div class="coloredLegend"></div>
                         <span class="legendText">Integer-column</span>
@@ -132,6 +134,7 @@ if ($uploadOk == 0) {
     </div>
 
     <div class="row">
+        <hr />
         <h3 class="showCorrelationMatrix"><a href="javascript:showCorrelationMatrix()">Show Correlation Matrix!</a></h3>
         <div class="tableLegend">
             <h4>Table legend:</h4>
