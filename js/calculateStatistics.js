@@ -4,13 +4,13 @@
 function createCovarianceMatrix () {
     // save the 45 degree header and the rest of the table in 2 different variables
     // merge them to return the full html
-    var htmlTopRow = "<tr><td class='correlationHead45'></td>";
+    var htmlTopRow = "<tr><th class='correlationHead45'></th>";
     var html = "";
     for (var i = 0; i < columnInfo.length; i++) {
         // create the 45 degree header row (at the top), only double- or int-columns are allowed
         var columnIsNumberI = columnInfo[i].datatype == "int" || columnInfo[i].datatype == "double";
         if (columnIsNumberI) {
-            htmlTopRow += "<td class='correlationHead45'><div><span>" + columnInfo[i].name + "</span></div></td>";
+            htmlTopRow += "<th class='correlationHead45'><div><span>" + columnInfo[i].name + "</span></div></th>";
         }
         correlationMatrix[i] = [];
 
@@ -18,7 +18,7 @@ function createCovarianceMatrix () {
             // add the left column with columnnames, only double- or int-columns are allowed
             var columnIsNumberN = columnInfo[n].datatype == "int" || columnInfo[n].datatype == "double";
             if (n == 0 && columnIsNumberI) {
-                html += "<tr><td class='correlationHead'>" + columnInfo[i].name + "</td>";
+                html += "<tr><th class='correlationHead'>" + columnInfo[i].name + "</th>";
             }
 
             // calculate correlation if both are numbers, and if n > i (upper right triangle of the matrix)
@@ -36,7 +36,51 @@ function createCovarianceMatrix () {
     }
     htmlTopRow += "</tr>";
 
-    $("#correlationTable")[0].innerHTML = htmlTopRow + html;
+    $("#correlationTable")[0].innerHTML = "<thead>" + htmlTopRow + "</thead><tbody>" + html + "</tbody>";
+    addHoverSelection();
+}
+
+/**
+ * function for highlighting the border of cells, which are vertically on the same level
+ * adds "listener" to td and th elements on mouseenter and mouseleave
+ * the listener adds respectively removes the class active from the vertical columns
+ * code adapted from http://stackoverflow.com/questions/13712868/change-column-background-color-on-hover
+ */
+function addHoverSelection () {
+    // Place outside hover function for performance reasons
+    var correlationDiv = $('#correlationTable');
+    var correlationDivHead = $('#correlationTable thead');
+    var correlationDivTd = $("#correlationTable td, #correlationTable th");
+
+    correlationDiv.on("mouseenter", "td", function() {
+        // Position of hovered column within this row
+        var thisIndex = $(this).parents('tr').find('td').index($(this));
+
+        // Add active class to all columns that have the same index as the hovered one + 1 for the index difference, and + 1 for the th-elements
+        $('#correlationTable tr    td:nth-child(' + (thisIndex + 1 + 1) + ')').addClass('active');
+        $('#correlationTable thead th:nth-child(' + (thisIndex + 1 + 1) + ')').addClass('active');
+
+        // Remove active class when mouse leaves a cell
+    }).on('mouseleave', "td", function () {
+        correlationDivTd.removeClass('active');
+    });
+
+    correlationDivHead.on("mouseenter", "div", function() {
+        // Position of hovered column within this row
+        var thisIndex = $(this).parents('tr').find('th').index($(this).parent());
+
+        // the first index is ignored (first cell in the first row is always empty)
+        if(thisIndex != 0) {
+            // Add active class to all columns that have the same index as the hovered one + 1 for the index difference
+            $('#correlationTable tr    td:nth-child(' + (thisIndex + 1) + ')').addClass('active');
+            $('#correlationTable thead th:nth-child(' + (thisIndex + 1) + ')').addClass('active');
+        }
+
+        // Remove active class when mouse leaves a cell
+    }).on('mouseleave', "div", function () {
+        correlationDivTd.removeClass('active');
+    });
+
 }
 
 

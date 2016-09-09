@@ -131,7 +131,8 @@ a {
 
 
 /* correlation-table, 45 degree header from http://jimmybonney.com/articles/column_header_rotation_css/ */
-#correlationTable td {
+#correlationTable td,
+#correlationTable th {
     border: 1px solid #ddd;
 }
 
@@ -139,7 +140,7 @@ a {
     padding: 40px 140px 25px 25px;
 }
 
-td.correlationHead45 {
+th.correlationHead45 {
     height: 120px;
     width: 50px;
     min-width: 50px;
@@ -152,7 +153,7 @@ td.correlationHead45 {
     border: 0px !important;
 }
 
-td.correlationHead45 > div {
+th.correlationHead45 > div {
     position: relative;
     top: 0px;
     left: 60px; /* 120 * tan(45) / 2 = 60 where 120 is the height on the cell and 45 is the transform angle*/
@@ -168,7 +169,7 @@ td.correlationHead45 > div {
     border-top: 1px solid #dddddd;
 }
 
-td.correlationHead45 span {
+th.correlationHead45 span {
     -ms-transform:skew(45deg,0deg) rotate(315deg);
     -moz-transform:skew(45deg,0deg) rotate(315deg);
     -webkit-transform:skew(45deg,0deg) rotate(315deg);
@@ -189,6 +190,24 @@ td.correlationBody {
     padding: 5px;
 }
 
+#correlationTable tbody th {
+    font-size: 12px;
+    padding: 5px;
+}
+
+/* border-color for mouse over, on tr and on active cells (gets set by js)
+   border-style double, because it has a higher priority, otherwise the color will only be visible at the bottom and right */
+#correlationTable tbody tr:hover td,
+#correlationTable tbody tr:hover th,
+#correlationTable tbody td.active {
+    border: 1px double #000;
+}
+
+#correlationTable thead th.active div {
+    border-left: 1px solid #000;
+    border-right: 1px solid #000;
+    border-top: 1px solid #000;
+}
 
 
 
