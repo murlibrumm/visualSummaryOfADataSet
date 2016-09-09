@@ -38,6 +38,16 @@ function createCovarianceMatrix () {
 
     $("#correlationTable")[0].innerHTML = "<thead>" + htmlTopRow + "</thead><tbody>" + html + "</tbody>";
     addHoverSelection();
+    createCorrelationInfo();
+}
+
+function createCorrelationInfo () {
+    var html = "";
+    for (var i = -1; i <= 1; ) {
+        html += "<div class='correlationInfoBox' style='background-color: " + getHSLColor(i) + "'>" + i + "</div>";
+        i = parseFloat((i + 0.2).toFixed(2));
+    }
+    $("#correlationDiv .correlationInfoLegend")[0].innerHTML = html;
 }
 
 /**
@@ -85,11 +95,13 @@ function addHoverSelection () {
 
 
 /**
- * HSL reference: http://www.ncl.ucar.edu/Applications/Images/colormap_6_3_lg.png
  * calculates the color based on the correlation of two values
  * @param {number} correlation, value between -1 and 1
  */
 function getHSLColor(correlation) {
+    /*
+    NON COLORBLIND FRIENDLY VERSION
+     HSL reference: http://www.ncl.ucar.edu/Applications/Images/colormap_6_3_lg.png
     // correlation is a value from -1 to 1
     // -1 = red   = 0   in HSL
     // +1 = green = 120 in HSL
@@ -98,7 +110,52 @@ function getHSLColor(correlation) {
     // 0 = red   = 0   in HSL
     // 2 = green = 120 in HSL
     var hue = (correlation * 60).toString(10);
-    return ["hsl(",hue,",100%,50%)"].join("");
+    return ["hsl(",hue,",100%,50%)"].join(""); */
+
+
+
+    /*
+    COLORBLIND VERSION #1
+    // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+    // colorblind safe colors from http://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
+
+    // F1A340 = 241 163 64  (orange)
+    // 998EC3 = 153 142 195 (violet)
+    // diff   = -88 -19 131
+    // correlation is a value from -1 to 1, for my calculations I want it to be 0 to 2
+    correlation += 1;
+    var r = Math.round(241 - (correlation * (88  / 2)));
+    var g = Math.round(163 - (correlation * (19  / 2)));
+    var b = Math.round(64  + (correlation * (131 / 2)));
+
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);*/
+
+
+
+    // COLORBLIND VERSION #2
+    // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+     // colorblind safe colors from http://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
+
+     // 998EC3 = 233 163 201 (pink)
+     // F1A340 = 161 215 106 (light green)
+     // diff   = -72 52  -95
+     // correlation is a value from -1 to 1, for my calculations I want it to be 0 to 2
+     correlation += 1;
+     var r = Math.round(233 - (correlation * (72 / 2)));
+     var g = Math.round(163 + (correlation * (52 / 2)));
+     var b = Math.round(201 - (correlation * (95 / 2)));
+
+     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+/**
+ * Converts an integer value to a hex value
+ * @param {Number} c
+ * @returns {String}
+ */
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
 }
 
 

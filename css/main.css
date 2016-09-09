@@ -212,6 +212,32 @@ td.correlationBody {
 
 
 
+
+.correlationInfo {
+    margin-top: 10px;
+}
+
+.correlationInfo span {
+    float: left;
+    padding-right: 10px;
+}
+
+.correlationInfoLegend {
+    white-space: nowrap;
+}
+
+.correlationInfoBox {
+    display: inline-block;
+    width: 50px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid #fff;
+}
+
+
+
+
+
 /* css for the infosection from the table */
 #data-table .dc-table-head {
     position: relative;
@@ -243,7 +269,8 @@ td.correlationBody {
     float: left;
 }
 
-.dc-table-head .columnInfo {
+.dc-table-head .columnInfo,
+.correlationInfo .infoTooltip{
     position: absolute;
     bottom: 18px;
     right: 8px;

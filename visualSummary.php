@@ -76,6 +76,11 @@ if ($uploadOk == 0) {
 <div id="correlationDiv" class="panel">
     <div class='closeInformationDiv'>[<a href='javascript:closeCorrelationMatrix()'> x </a>]</div>
     <table id="correlationTable"></table>
+    <div class="correlationInfo">
+        <span>Table legend: </span>
+        <div class="correlationInfoLegend"></div>
+        <div class='infoTooltip' data-toggle="tooltip" data-original-title="Correlation describes the linear dependence of two columns. It has a value between -1 and 1. 1 is total positive correlation, 0 is no correlation, and −1 is total negative correlation. For example: If the higher the values of column A are, the lower the values of column B, we speak of a negative correlation."></div>
+    </div>
 </div>
 
 <div class="container-fluid">

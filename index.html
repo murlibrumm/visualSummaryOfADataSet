@@ -25,7 +25,7 @@
             <div class="row">
                 <div class="col-md-12">
                     <label for="fileToUpload">Select csv-file via file-chooser:</label>
-                    <input type="file" id="fileToUpload" name="fileToUpload"/>
+                    <input type="file" id="fileToUpload" name="fileToUpload" required />
                 </div>
             </div>
 
@@ -37,13 +37,13 @@
                     </div>
                     <div class="col-md-12">
                     <label class="radio">
-                        <input type="radio" name="csvSeparator" value="comma">comma (,)
+                        <input type="radio" name="csvSeparator" value="comma" required />comma (,)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="csvSeparator" value="semicolon">semicolon (;)
+                        <input type="radio" name="csvSeparator" value="semicolon" />semicolon (;)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="csvSeparator" value="tab">tab (\t)
+                        <input type="radio" name="csvSeparator" value="tab" />tab (\t)
                     </label>
                 </div>
             </div>
@@ -56,10 +56,10 @@
                 </div>
                 <div class="col-md-12">
                     <label class="radio">
-                        <input type="radio" name="decimalMark" value="dot">dot (3.1415)
+                        <input type="radio" name="decimalMark" value="dot" required />dot (3.1415)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="decimalMark" value="comma">comma (3,1415)
+                        <input type="radio" name="decimalMark" value="comma" />comma (3,1415)
                     </label>
                 </div>
             </div>
@@ -74,23 +74,23 @@
                 </div>
                 <div class="col-md-12">
                     <label class="radio">
-                        <input type="radio" name="thousandsSeparator" value="none">none (1746396)
+                        <input type="radio" name="thousandsSeparator" value="none" required />none (1746396)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="thousandsSeparator" value="dot">dot (1.746.396)
+                        <input type="radio" name="thousandsSeparator" value="dot" />dot (1.746.396)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="thousandsSeparator" value="blank">blank (1 746 396)
+                        <input type="radio" name="thousandsSeparator" value="blank" />blank (1 746 396)
                     </label>
                     <label class="radio">
-                        <input type="radio" name="thousandsSeparator" value="comma">comma (1,746,396)
+                        <input type="radio" name="thousandsSeparator" value="comma" />comma (1,746,396)
                     </label>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col-md-12" id="submitbutton">
-                    <button type="submit">Upload File</button>
+                    <button type="submit" />Upload File</button>
                 </div>
             </div>
 
