@@ -224,6 +224,7 @@ td.correlationBody {
 
 .correlationInfoLegend {
     white-space: nowrap;
+    padding-right: 10px;
 }
 
 .correlationInfoBox {
@@ -270,13 +271,21 @@ td.correlationBody {
 }
 
 .dc-table-head .columnInfo,
-.correlationInfo .infoTooltip{
+.correlationInfo .infoTooltip {
     position: absolute;
-    bottom: 18px;
-    right: 8px;
     background-image: url("../img/info.png");
     width: 23px;
     height: 23px;
+}
+
+.dc-table-head .columnInfo {
+    bottom: 18px;
+    right: 8px;
+}
+
+.correlationInfo .infoTooltip {
+    bottom: 26px;
+    right: 12px;
 }
 
 .dcTableHeadComposition {

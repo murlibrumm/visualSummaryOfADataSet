@@ -119,9 +119,9 @@ function getHSLColor(correlation) {
     // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
     // colorblind safe colors from http://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
 
-    // F1A340 = 241 163 64  (orange)
-    // 998EC3 = 153 142 195 (violet)
-    // diff   = -88 -19 131
+    // F1A340 = (RGB) 241 163 64  (orange)
+    // 998EC3 = (RGB) 153 142 195 (violet)
+    // diff   = (RGB) -88 -19 131
     // correlation is a value from -1 to 1, for my calculations I want it to be 0 to 2
     correlation += 1;
     var r = Math.round(241 - (correlation * (88  / 2)));
@@ -132,20 +132,37 @@ function getHSLColor(correlation) {
 
 
 
-    // COLORBLIND VERSION #2
+    /*// COLORBLIND VERSION #2
     // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
      // colorblind safe colors from http://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
 
-     // 998EC3 = 233 163 201 (pink)
-     // F1A340 = 161 215 106 (light green)
-     // diff   = -72 52  -95
+     // e9a3c9 = (RGB) 233 163 201 (pink)
+     // a1d76a = (RGB) 161 215 106 (light green)
+     // diff   = (RGB) -72 52  -95
      // correlation is a value from -1 to 1, for my calculations I want it to be 0 to 2
      correlation += 1;
      var r = Math.round(233 - (correlation * (72 / 2)));
      var g = Math.round(163 + (correlation * (52 / 2)));
      var b = Math.round(201 - (correlation * (95 / 2)));
 
-     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+     return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);*/
+
+
+    // COLORBLIND VERSION #3
+    // http://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+    // colorblind safe colors from http://colorbrewer2.org/#type=diverging&scheme=PuOr&n=3
+
+    // e9a3c9 = (HSB)  327  30 91 (pink)
+    // a1d76a = (HSB)   90  51 84 (light green)
+    // diff   = (HSB) -237  21 -7
+    // correlation is a value from -1 to 1, for my calculations I want it to be 0 to 2
+    correlation += 1;
+
+    var h = 327 - (correlation * (237 / 2)).toString(10);
+    var s =  30 + (correlation * ( 51 / 2)).toString(10);
+    var b =  91 - (correlation * (  7 / 2)).toString(10);
+    return ["hsl(", h, ",", s, "%,", b, "%)"].join("");
+
 }
 
 /**
