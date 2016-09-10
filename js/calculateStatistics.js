@@ -159,7 +159,7 @@ function getHSLColor(correlation) {
     correlation += 1;
 
     var h = 327 - (correlation * (237 / 2)).toString(10);
-    var s =  30 + (correlation * ( 51 / 2)).toString(10);
+    var s =  30 + (correlation * ( 21 / 2)).toString(10);
     var b =  91 - (correlation * (  7 / 2)).toString(10);
     return ["hsl(", h, ",", s, "%,", b, "%)"].join("");
 
