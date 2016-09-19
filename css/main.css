@@ -363,19 +363,19 @@ td.correlationBody {
 }
 
 .tableLegendInt .coloredLegend {
-    background-color: #7fc97f;
+    background-color: #a6cee3;
 }
 
 .tableLegendDouble .coloredLegend {
-    background-color: #fdc086;
+    background-color: #1f78b4;
 }
 
 .tableLegendString .coloredLegend {
-    background-color: #beaed4;
+    background-color: #33a02c;
 }
 
 .tableLegendBoolean .coloredLegend {
-    background-color: #ffff99;
+    background-color: #b2df8a;
 }
 
 

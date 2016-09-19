@@ -107,10 +107,10 @@ $().ready(function () {
     }
 
     // initialize the histogramColorArray
-    histogramColors["int"]     = "#7fc97f";
-    histogramColors["double"]  = "#fdc086";
-    histogramColors["string"]  = "#beaed4";
-    histogramColors["boolean"] = "#ffff99";
+    histogramColors["int"]     = "#a6cee3";
+    histogramColors["double"]  = "#1f78b4";
+    histogramColors["string"]  = "#33a02c";
+    histogramColors["boolean"] = "#b2df8a";
 
     // parse each row from the csv-file
     $.get(csvUrl)
